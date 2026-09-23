@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400" font-family="Inter, 'Helvetica Neue', Arial, sans-serif">
+  <defs>
+    <marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#4b5563"/>
+    </marker>
+    <filter id="s2" x="-5%" y="-5%" width="110%" height="115%">
+      <feDropShadow dx="0" dy="1.5" stdDeviation="2" flood-color="#000" flood-opacity="0.08"/>
+    </filter>
+  </defs>
+  <rect width="1200" height="400" fill="#fff"/>
+
+  <!-- Teacher row -->
+  <text x="30" y="34" font-size="13" font-weight="700" letter-spacing="0.06em" fill="#6b7280">TEACHER · TERRAIN-AWARE MOTION TRACKING (ISAAC LAB)</text>
+  <rect x="20" y="46" width="1160" height="150" rx="14" fill="#eef4fb" stroke="#c7d8ee"/>
+
+  <g font-size="13.5" fill="#1f2937">
+    <rect x="40" y="62" width="200" height="34" rx="8" fill="#fff" stroke="#c7d8ee" filter="url(#s2)"/><text x="140" y="84" text-anchor="middle">proprioception</text>
+    <rect x="40" y="104" width="200" height="34" rx="8" fill="#fff" stroke="#c7d8ee" filter="url(#s2)"/><text x="140" y="126" text-anchor="middle">height map (17×11, xyz)</text>
+    <rect x="40" y="146" width="200" height="34" rx="8" fill="#dbeafe" stroke="#93c5fd" filter="url(#s2)"/><text x="140" y="168" text-anchor="middle" font-weight="600">reference motion (UE)</text>
+  </g>
+  <g stroke="#4b5563" stroke-width="2">
+    <line x1="242" y1="79" x2="330" y2="112" marker-end="url(#a2)"/>
+    <line x1="242" y1="121" x2="330" y2="121" marker-end="url(#a2)"/>
+    <line x1="242" y1="163" x2="330" y2="130" marker-end="url(#a2)"/>
+  </g>
+  <rect x="334" y="82" width="170" height="78" rx="12" fill="#2563eb" filter="url(#s2)"/>
+  <text x="419" y="116" text-anchor="middle" font-size="17" font-weight="700" fill="#fff">Teacher π<tspan baseline-shift="sub" font-size="12">T</tspan></text>
+  <text x="419" y="138" text-anchor="middle" font-size="12" fill="#dbeafe">multi-motion policy</text>
+  <line x1="506" y1="121" x2="560" y2="121" stroke="#4b5563" stroke-width="2" marker-end="url(#a2)"/>
+  <rect x="564" y="100" width="150" height="42" rx="8" fill="#fff" stroke="#c7d8ee"/>
+  <text x="639" y="126" text-anchor="middle" font-size="13.5" fill="#1f2937">joint targets (29)</text>
+
+  <rect x="760" y="66" width="400" height="112" rx="10" fill="#fff" stroke="#c7d8ee" filter="url(#s2)"/>
+  <text x="780" y="92" font-size="14" font-weight="700" fill="#1f2937">Reward: track the reference</text>
+  <g font-size="12.5" fill="#374151">
+    <text x="780" y="114">• body pose and velocity tracking (BeyondMimic-style)</text>
+    <text x="780" y="134">• action-rate and joint-acceleration penalties</text>
+    <text x="780" y="154">• foot-contact info given to the critic only</text>
+    <text x="780" y="172" fill="#6b7280">success = root stays within 0.5 m of the reference</text>
+  </g>
+
+  <!-- distill arrow -->
+  <line x1="419" y1="198" x2="419" y2="240" stroke="#7c3aed" stroke-width="2.5" marker-end="url(#a2)"/>
+  <rect x="432" y="206" width="210" height="26" rx="13" fill="#ede9fe"/>
+  <text x="537" y="224" text-anchor="middle" font-size="12.5" font-weight="600" fill="#5b21b6">distill: DAgger → PPO fine-tune</text>
+
+  <!-- Student row -->
+  <text x="30" y="262" font-size="13" font-weight="700" letter-spacing="0.06em" fill="#6b7280">STUDENT · DEPLOYABLE COMMAND-CONDITIONED POLICY</text>
+  <rect x="20" y="274" width="1160" height="112" rx="14" fill="#f5f3ff" stroke="#ddd6fe"/>
+  <g font-size="13.5" fill="#1f2937">
+    <rect x="40" y="288" width="200" height="34" rx="8" fill="#fff" stroke="#ddd6fe" filter="url(#s2)"/><text x="140" y="310" text-anchor="middle">proprioception + height map</text>
+    <rect x="40" y="334" width="200" height="34" rx="8" fill="#ede9fe" stroke="#c4b5fd" filter="url(#s2)"/><text x="140" y="356" text-anchor="middle" font-weight="600">velocity command</text>
+  </g>
+  <g stroke="#4b5563" stroke-width="2">
+    <line x1="242" y1="305" x2="330" y2="322" marker-end="url(#a2)"/>
+    <line x1="242" y1="351" x2="330" y2="334" marker-end="url(#a2)"/>
+  </g>
+  <rect x="334" y="290" width="170" height="78" rx="12" fill="#7c3aed" filter="url(#s2)"/>
+  <text x="419" y="324" text-anchor="middle" font-size="17" font-weight="700" fill="#fff">Student π<tspan baseline-shift="sub" font-size="12">S</tspan></text>
+  <text x="419" y="346" text-anchor="middle" font-size="12" fill="#ede9fe">no reference motion</text>
+  <line x1="506" y1="329" x2="560" y2="329" stroke="#4b5563" stroke-width="2" marker-end="url(#a2)"/>
+  <rect x="564" y="308" width="150" height="42" rx="8" fill="#fff" stroke="#ddd6fe"/>
+  <text x="639" y="334" text-anchor="middle" font-size="13.5" fill="#1f2937">joint targets (29)</text>
+  <text x="760" y="324" font-size="13" fill="#374151">Evaluated on unseen staircases:</text>
+  <text x="760" y="344" font-size="13" fill="#374151">step height 15–35 cm, depth up to 70 cm</text>
+</svg>
