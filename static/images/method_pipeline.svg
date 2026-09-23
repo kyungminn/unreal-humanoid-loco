@@ -1,0 +1,160 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 520" font-family="Inter, 'Helvetica Neue', Arial, sans-serif">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#4b5563"/>
+    </marker>
+    <filter id="sh" x="-5%" y="-5%" width="110%" height="115%">
+      <feDropShadow dx="0" dy="1.5" stdDeviation="2" flood-color="#000" flood-opacity="0.08"/>
+    </filter>
+  </defs>
+
+  <rect width="1200" height="520" fill="#ffffff"/>
+
+  <!-- ===== Stage headers ===== -->
+  <g font-size="13" font-weight="700" letter-spacing="0.06em" fill="#6b7280">
+    <text x="30" y="36">① MOTION LIBRARY</text>
+    <text x="330" y="36">② G1 CONTROLLER IN UNREAL ENGINE</text>
+    <text x="690" y="36">③ AUTOMATIC DATA GENERATION</text>
+    <text x="970" y="36">④ OUTPUT</text>
+  </g>
+
+  <!-- ===== Stage 1: motion library ===== -->
+  <rect x="20" y="52" width="270" height="440" rx="14" fill="#eef4fb" stroke="#c7d8ee"/>
+  <!-- anchor clips -->
+  <rect x="38" y="72" width="234" height="150" rx="10" fill="#fff" stroke="#c7d8ee" filter="url(#sh)"/>
+  <text x="155" y="96" text-anchor="middle" font-size="15" font-weight="700" fill="#1f2937">Anchor motion clips</text>
+  <g font-size="12.5" fill="#374151">
+    <rect x="52" y="110" width="98" height="26" rx="13" fill="#dbe8f7"/><text x="101" y="127" text-anchor="middle">walk / run</text>
+    <rect x="160" y="110" width="98" height="26" rx="13" fill="#dbe8f7"/><text x="209" y="127" text-anchor="middle">kneel / turn</text>
+    <rect x="52" y="144" width="98" height="26" rx="13" fill="#dbe8f7"/><text x="101" y="161" text-anchor="middle">stair ascend</text>
+    <rect x="160" y="144" width="98" height="26" rx="13" fill="#dbe8f7"/><text x="209" y="161" text-anchor="middle">stair descend</text>
+    <rect x="52" y="178" width="98" height="26" rx="13" fill="#dbe8f7"/><text x="101" y="195" text-anchor="middle">step-over</text>
+    <rect x="160" y="178" width="98" height="26" rx="13" fill="#dbe8f7"/><text x="209" y="195" text-anchor="middle">climb-up</text>
+  </g>
+  <text x="155" y="240" text-anchor="middle" font-size="11.5" fill="#6b7280">sources: ALS v4 assets, own videos</text>
+  <text x="155" y="254" text-anchor="middle" font-size="11.5" fill="#6b7280">lifted with GVHMR / SAM-3D-Body</text>
+
+  <line x1="155" y1="260" x2="155" y2="282" stroke="#4b5563" stroke-width="2" marker-end="url(#arr)"/>
+
+  <!-- retarget chain -->
+  <rect x="38" y="286" width="234" height="190" rx="10" fill="#fff" stroke="#c7d8ee" filter="url(#sh)"/>
+  <text x="155" y="310" text-anchor="middle" font-size="15" font-weight="700" fill="#1f2937">Contact-preserving retargeting</text>
+  <g font-size="12.5" fill="#1f2937">
+    <rect x="58" y="324" width="194" height="24" rx="6" fill="#f3f4f6"/><text x="155" y="340" text-anchor="middle">UE Mannequin</text>
+    <text x="155" y="360" text-anchor="middle" fill="#6b7280">↓</text>
+    <rect x="58" y="366" width="194" height="24" rx="6" fill="#f3f4f6"/><text x="155" y="382" text-anchor="middle">Mannequin-shaped SMPL</text>
+    <text x="155" y="402" text-anchor="middle" fill="#6b7280">↓</text>
+    <rect x="58" y="408" width="194" height="24" rx="6" fill="#f3f4f6"/><text x="155" y="424" text-anchor="middle">G1-shaped SMPL</text>
+    <text x="155" y="444" text-anchor="middle" fill="#6b7280">↓</text>
+    <rect x="58" y="448" width="194" height="22" rx="6" fill="#2563eb"/><text x="155" y="463" text-anchor="middle" fill="#fff" font-weight="600">Unitree G1 (29 DoF)</text>
+  </g>
+
+  <!-- arrow 1 -> 2 -->
+  <line x1="292" y1="272" x2="318" y2="272" stroke="#4b5563" stroke-width="2.2" marker-end="url(#arr)"/>
+
+  <!-- ===== Stage 2: controller ===== -->
+  <rect x="320" y="52" width="350" height="440" rx="14" fill="#fdf3e7" stroke="#f1d4ad"/>
+  <!-- input -->
+  <rect x="340" y="72" width="310" height="44" rx="10" fill="#fff" stroke="#f1d4ad" filter="url(#sh)"/>
+  <text x="495" y="92" text-anchor="middle" font-size="13" fill="#6b7280">input</text>
+  <text x="495" y="108" text-anchor="middle" font-size="14" font-weight="600" fill="#1f2937">velocity / direction command</text>
+  <line x1="495" y1="118" x2="495" y2="138" stroke="#4b5563" stroke-width="2" marker-end="url(#arr)"/>
+
+  <!-- blend space -->
+  <rect x="340" y="142" width="310" height="130" rx="10" fill="#fff" stroke="#f1d4ad" filter="url(#sh)"/>
+  <text x="495" y="166" text-anchor="middle" font-size="15" font-weight="700" fill="#1f2937">Blend space</text>
+  <!-- little 2D blend grid -->
+  <g transform="translate(370,180)">
+    <rect width="110" height="78" fill="#fff7ed" stroke="#fdba74" rx="4"/>
+    <circle cx="10" cy="68" r="5" fill="#f97316"/><circle cx="100" cy="68" r="5" fill="#f97316"/>
+    <circle cx="10" cy="10" r="5" fill="#f97316"/><circle cx="100" cy="10" r="5" fill="#f97316"/>
+    <circle cx="62" cy="34" r="6" fill="#fff" stroke="#c2410c" stroke-width="2.5"/>
+    <line x1="62" y1="34" x2="10" y2="68" stroke="#fdba74" stroke-dasharray="3 3"/>
+    <line x1="62" y1="34" x2="100" y2="68" stroke="#fdba74" stroke-dasharray="3 3"/>
+    <line x1="62" y1="34" x2="10" y2="10" stroke="#fdba74" stroke-dasharray="3 3"/>
+    <line x1="62" y1="34" x2="100" y2="10" stroke="#fdba74" stroke-dasharray="3 3"/>
+  </g>
+  <g font-size="12.5" fill="#374151">
+    <text x="498" y="200">weighted mix of</text>
+    <text x="498" y="217">anchor clips by</text>
+    <text x="498" y="234">speed, direction,</text>
+    <text x="498" y="251">step height</text>
+  </g>
+  <line x1="495" y1="274" x2="495" y2="294" stroke="#4b5563" stroke-width="2" marker-end="url(#arr)"/>
+
+  <!-- foot IK -->
+  <rect x="340" y="298" width="310" height="178" rx="10" fill="#fff" stroke="#f1d4ad" filter="url(#sh)"/>
+  <text x="495" y="322" text-anchor="middle" font-size="15" font-weight="700" fill="#1f2937">Terrain-aware foot placement</text>
+  <!-- stair + foot rays drawing -->
+  <g transform="translate(362,336)">
+    <path d="M0,112 L40,112 L40,88 L80,88 L80,64 L120,64 L120,40 L130,40" fill="none" stroke="#9ca3af" stroke-width="3"/>
+    <path d="M0,112 L40,112 L40,88 L80,88 L80,64 L120,64 L120,40 L130,40 L130,124 L0,124 Z" fill="#f3f4f6"/>
+    <!-- foot -->
+    <rect x="46" y="70" width="24" height="9" rx="3" fill="#2563eb"/>
+    <!-- rays -->
+    <line x1="48" y1="40" x2="48" y2="86" stroke="#ef4444" stroke-width="1.8" stroke-dasharray="4 3"/>
+    <line x1="68" y1="40" x2="68" y2="86" stroke="#ef4444" stroke-width="1.8" stroke-dasharray="4 3"/>
+    <!-- next foothold -->
+    <circle cx="100" cy="62" r="5" fill="none" stroke="#16a34a" stroke-width="2.5"/>
+    <path d="M70,66 Q86,36 98,56" fill="none" stroke="#16a34a" stroke-width="1.8" marker-end="url(#arr)"/>
+  </g>
+  <g font-size="12.5" fill="#374151">
+    <text x="508" y="364">• toe / heel ray casts</text>
+    <text x="508" y="384">  keep feet on surfaces</text>
+    <text x="508" y="408">• look-ahead height map</text>
+    <text x="508" y="428">  picks next foothold</text>
+    <text x="508" y="452">• stride adapted to</text>
+    <text x="508" y="470">  step depth</text>
+  </g>
+
+  <!-- arrow 2 -> 3 -->
+  <line x1="672" y1="272" x2="696" y2="272" stroke="#4b5563" stroke-width="2.2" marker-end="url(#arr)"/>
+
+  <!-- ===== Stage 3: data generation ===== -->
+  <rect x="698" y="52" width="252" height="440" rx="14" fill="#ecf6ee" stroke="#bfe0c6"/>
+  <rect x="716" y="72" width="216" height="190" rx="10" fill="#fff" stroke="#bfe0c6" filter="url(#sh)"/>
+  <text x="824" y="96" text-anchor="middle" font-size="15" font-weight="700" fill="#1f2937">Procedural terrain</text>
+  <g transform="translate(744,110)">
+    <path d="M0,90 L30,90 L30,72 L60,72 L60,54 L90,54 L90,36 L120,36 L120,18 L160,18 L160,100 L0,100 Z" fill="#d1fae5" stroke="#34d399" stroke-width="1.5"/>
+    <text x="96" y="30" font-size="11" fill="#065f46">h</text>
+    <line x1="92" y1="36" x2="92" y2="54" stroke="#065f46" stroke-width="1"/>
+    <text x="38" y="86" font-size="11" fill="#065f46">d</text>
+    <line x1="30" y1="76" x2="60" y2="76" stroke="#065f46" stroke-width="1"/>
+  </g>
+  <text x="824" y="234" text-anchor="middle" font-size="12.5" fill="#374151">random step height h, depth d,</text>
+  <text x="824" y="251" text-anchor="middle" font-size="12.5" fill="#374151">number of steps, direction</text>
+
+  <line x1="824" y1="264" x2="824" y2="286" stroke="#4b5563" stroke-width="2" marker-end="url(#arr)"/>
+
+  <rect x="716" y="290" width="216" height="186" rx="10" fill="#fff" stroke="#bfe0c6" filter="url(#sh)"/>
+  <text x="824" y="314" text-anchor="middle" font-size="15" font-weight="700" fill="#1f2937">NavMesh auto-navigation</text>
+  <g transform="translate(740,328)">
+    <rect width="168" height="84" rx="6" fill="#f0fdf4" stroke="#bbf7d0"/>
+    <path d="M14,70 C50,70 50,20 90,26 S140,60 154,16" fill="none" stroke="#16a34a" stroke-width="2.5" stroke-dasharray="6 4" marker-end="url(#arr)"/>
+    <circle cx="14" cy="70" r="6" fill="#2563eb"/>
+    <rect x="70" y="44" width="26" height="20" fill="#e5e7eb"/>
+    <rect x="112" y="18" width="18" height="24" fill="#e5e7eb"/>
+  </g>
+  <text x="824" y="436" text-anchor="middle" font-size="12.5" fill="#374151">G1 walks to random goals;</text>
+  <text x="824" y="453" text-anchor="middle" font-size="12.5" fill="#374151">many instances in parallel</text>
+
+  <!-- arrow 3 -> 4 -->
+  <line x1="952" y1="272" x2="976" y2="272" stroke="#4b5563" stroke-width="2.2" marker-end="url(#arr)"/>
+
+  <!-- ===== Stage 4: output ===== -->
+  <rect x="978" y="52" width="202" height="440" rx="14" fill="#f5f3ff" stroke="#ddd6fe"/>
+  <rect x="994" y="120" width="170" height="160" rx="10" fill="#fff" stroke="#ddd6fe" filter="url(#sh)"/>
+  <text x="1079" y="146" text-anchor="middle" font-size="15" font-weight="700" fill="#1f2937">Aligned pairs</text>
+  <g font-size="13" fill="#374151">
+    <rect x="1010" y="160" width="138" height="30" rx="7" fill="#ede9fe"/><text x="1079" y="180" text-anchor="middle">terrain mesh</text>
+    <text x="1079" y="206" text-anchor="middle" font-size="16" fill="#7c3aed">+</text>
+    <rect x="1010" y="214" width="138" height="30" rx="7" fill="#ede9fe"/><text x="1079" y="234" text-anchor="middle">G1 joint trajectory</text>
+    <text x="1079" y="266" text-anchor="middle" font-size="11.5" fill="#6b7280">no retargeting needed</text>
+  </g>
+  <rect x="994" y="300" width="170" height="80" rx="10" fill="#7c3aed"/>
+  <text x="1079" y="330" text-anchor="middle" font-size="24" font-weight="800" fill="#fff">~6 h / h</text>
+  <text x="1079" y="356" text-anchor="middle" font-size="12" fill="#ede9fe">motion data per</text>
+  <text x="1079" y="371" text-anchor="middle" font-size="12" fill="#ede9fe">wall-clock hour</text>
+  <text x="1079" y="420" text-anchor="middle" font-size="12.5" fill="#374151">exported to Isaac Lab</text>
+  <text x="1079" y="438" text-anchor="middle" font-size="12.5" fill="#374151">for motion tracking →</text>
+</svg>
