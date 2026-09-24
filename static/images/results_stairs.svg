@@ -1,6 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 430" font-family="Inter, Helvetica, Arial, sans-serif"><rect width="1100" height="430" fill="#fff"/>
-<g font-size="14" fill="#1f2937"><line x1="330" y1="30" x2="362" y2="30" stroke="#2563eb" stroke-width="3.5"/><circle cx="346" cy="30" r="5.5" fill="#2563eb"/><text x="370" y="35">Ours: student trained on Unreal data</text><line x1="640" y1="30" x2="672" y2="30" stroke="#9ca3af" stroke-width="3.5" stroke-dasharray="7 5"/><rect x="651" y="25" width="10" height="10" fill="#9ca3af"/><text x="680" y="35">Perceptive AMP (Hiking in the Wild style)</text></g>
-<text x="310.0" y="62" text-anchor="middle" font-size="16" font-weight="700" fill="#111827">Ascending stairs</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -20 1100 450" font-family="Inter, Helvetica, Arial, sans-serif"><rect width="1100" height="430" fill="#fff"/>
+<g font-size="14" fill="#1f2937"><line x1="330" y1="-2" x2="362" y2="-2" stroke="#2563eb" stroke-width="3.5"/><circle cx="346" cy="-2" r="5.5" fill="#2563eb"/><text x="370" y="3">Ours: student trained on Unreal data</text><line x1="640" y1="-2" x2="672" y2="-2" stroke="#9ca3af" stroke-width="3.5" stroke-dasharray="7 5"/><rect x="651" y="-7" width="10" height="10" fill="#9ca3af"/><text x="680" y="3">Perceptive AMP (Hiking in the Wild style)</text></g>
+<text x="310.0" y="36" text-anchor="middle" font-size="16" font-weight="700" fill="#111827">Ascending stairs</text>
 <line x1="90" y1="350.0" x2="530" y2="350.0" stroke="#e5e7eb"/><text x="80" y="354.0" text-anchor="end" font-size="12" fill="#6b7280">0</text>
 <line x1="90" y1="282.5" x2="530" y2="282.5" stroke="#e5e7eb"/><text x="80" y="286.5" text-anchor="end" font-size="12" fill="#6b7280">25</text>
 <line x1="90" y1="215.0" x2="530" y2="215.0" stroke="#e5e7eb"/><text x="80" y="219.0" text-anchor="end" font-size="12" fill="#6b7280">50</text>
@@ -37,7 +37,7 @@
 <circle cx="530.0" cy="312.2" r="5.5" fill="#2563eb"/>
 <text x="530.0" y="330.2" text-anchor="middle" font-size="12" font-weight="600" fill="#2563eb">14</text>
 <rect x="90" y="80" width="440" height="270" fill="none" stroke="#d1d5db"/>
-<text x="840.0" y="62" text-anchor="middle" font-size="16" font-weight="700" fill="#111827">Descending stairs</text>
+<text x="840.0" y="36" text-anchor="middle" font-size="16" font-weight="700" fill="#111827">Descending stairs</text>
 <line x1="620" y1="350.0" x2="1060" y2="350.0" stroke="#e5e7eb"/><text x="610" y="354.0" text-anchor="end" font-size="12" fill="#6b7280">0</text>
 <line x1="620" y1="282.5" x2="1060" y2="282.5" stroke="#e5e7eb"/><text x="610" y="286.5" text-anchor="end" font-size="12" fill="#6b7280">25</text>
 <line x1="620" y1="215.0" x2="1060" y2="215.0" stroke="#e5e7eb"/><text x="610" y="219.0" text-anchor="end" font-size="12" fill="#6b7280">50</text>
