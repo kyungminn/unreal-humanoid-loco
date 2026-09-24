@@ -6,88 +6,164 @@
 <title>Scene-Aware Humanoid Locomotion via Unreal Engine Data Generation</title>
 <meta name="description" content="A discontinued research project: putting the Unitree G1 into Unreal Engine to generate terrain-aligned humanoid motion data, and what we learned.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;0,800;1,400&display=swap">
 <style>
-  :root { --fg:#1f2328; --muted:#57606a; --accent:#2f6f4f; --accent-soft:#e2f0d9; --border:#e5e7eb; --warn:#8a5a00; --warn-soft:#fff4d6; }
+  :root {
+    --bg:#ffffff; --bg-alt:#f2faf8; --ink:#1b2024; --muted:#5a646b; --line:#dcefea;
+    --accent:#14b8a6; --accent-ink:#0f766e; --accent-soft:#e6f7f4;
+    --bad:#b42318; --bad-soft:#fdecea; --warn:#8a5a00; --warn-soft:#fff4d6;
+    --radius:14px; --maxw:1040px; color-scheme:light;
+  }
   * { box-sizing:border-box; }
-  body { margin:0; font-family:'Noto Sans','Inter',system-ui,sans-serif; color:var(--fg); line-height:1.65; background:#fff; }
-  .wrap { max-width:1000px; margin:0 auto; padding:0 20px; }
-  header { text-align:center; padding:56px 0 24px; }
-  h1 { font-family:'Inter',sans-serif; font-size:2.1rem; line-height:1.25; margin:0 0 14px; font-weight:700; }
-  .subtitle { color:var(--muted); font-size:1.05rem; margin:0 0 18px; }
-  .authors { font-size:1.05rem; margin:6px 0; }
-  .authors a { color:var(--fg); text-decoration:none; border-bottom:1px dotted var(--muted); }
-  .affil { color:var(--muted); font-size:.95rem; }
-  .status { display:inline-block; margin-top:16px; padding:6px 14px; border-radius:999px; background:var(--warn-soft); color:var(--warn); font-size:.9rem; font-weight:600; }
-  .buttons { margin-top:18px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
-  .btn { display:inline-block; padding:8px 16px; border-radius:999px; background:#24292f; color:#fff; text-decoration:none; font-size:.92rem; font-weight:500; }
-  .btn.ghost { background:#fff; color:#24292f; border:1px solid #d0d7de; }
-  section { padding:28px 0; border-top:1px solid var(--border); }
-  h2 { font-family:'Inter',sans-serif; font-size:1.55rem; margin:0 0 14px; text-align:center; }
-  h3 { font-family:'Inter',sans-serif; font-size:1.12rem; margin:30px 0 8px; }
-  p { margin:10px 0; }
-  figure { margin:18px 0; text-align:center; }
-  figure img { max-width:100%; border-radius:8px; }
-  figcaption { color:var(--muted); font-size:.9rem; margin-top:8px; text-align:left; }
-  .tldr { background:var(--accent-soft); border-left:4px solid var(--accent); padding:16px 20px; border-radius:6px; }
-  .tldr ul { margin:6px 0 0; padding-left:20px; }
+  html { scroll-behavior:smooth; scroll-padding-top:64px; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:"Open Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; font-size:17px; line-height:1.65; -webkit-font-smoothing:antialiased; }
+  a { color:var(--accent-ink); text-decoration:none; }
+  a:hover { text-decoration:underline; }
+  img, video { display:block; max-width:100%; }
+  .wrap { max-width:var(--maxw); margin:0 auto; padding:0 16px; }
+  .wrap.wide { max-width:1240px; }
+
+  /* nav */
+  .nav { position:sticky; top:0; z-index:10; background:rgba(255,255,255,.92); backdrop-filter:saturate(160%) blur(8px); border-bottom:1px solid var(--line); }
+  .nav .wrap { display:flex; align-items:center; gap:22px; height:52px; overflow-x:auto; white-space:nowrap; scrollbar-width:none; }
+  .nav .wrap::-webkit-scrollbar { display:none; }
+  .nav .brand { font-weight:800; color:var(--ink); margin-right:auto; }
+  .nav .brand span { color:var(--accent); }
+  .nav a { font-size:14.5px; font-weight:600; color:var(--muted); }
+  .nav a:hover { color:var(--accent-ink); text-decoration:none; }
+
+  /* hero */
+  header.hero { padding:56px 0 28px; text-align:center; }
+  .hero h1 { margin:0; font-size:clamp(32px,5.2vw,54px); font-weight:800; letter-spacing:-.02em; line-height:1.12; }
+  .hero h1 .hl { color:var(--accent); }
+  .hero .subtitle { margin:14px auto 0; max-width:780px; font-size:clamp(18px,2.4vw,24px); font-weight:600; line-height:1.35; color:#30383e; }
+  .hero .question { margin:14px auto 0; max-width:720px; color:var(--muted); font-size:16.5px; }
+  .authors { margin:26px auto 0; max-width:880px; display:flex; flex-wrap:wrap; justify-content:center; gap:4px 20px; font-size:17.5px; }
+  .authors span { white-space:nowrap; }
+  .affils { margin-top:10px; display:flex; flex-wrap:wrap; justify-content:center; gap:2px 22px; color:var(--muted); font-size:16px; }
+  .status { display:inline-block; margin-top:18px; padding:5px 14px; border-radius:999px; background:var(--warn-soft); color:var(--warn); font-size:14px; font-weight:700; }
+  .buttons { margin-top:22px; display:flex; flex-wrap:wrap; justify-content:center; gap:10px; }
+  .btn { display:inline-flex; align-items:center; gap:8px; padding:9px 18px; border-radius:999px; background:var(--ink); color:#fff; font-weight:600; font-size:15.5px; border:1px solid var(--ink); }
+  .btn:hover { background:#000; text-decoration:none; }
+  .btn.ghost { background:#fff; color:var(--ink); border-color:var(--line); }
+  .btn.ghost:hover { border-color:var(--ink); }
+  .hero-video { margin-top:34px; }
+  .hero-video video { border-radius:var(--radius); box-shadow:0 12px 34px rgba(10,70,60,.16); }
+  .hero-video figcaption { text-align:center; }
+
+  /* sections */
+  section { padding:52px 0; }
+  section.alt { background:var(--bg-alt); }
+  h2 { margin:0 0 18px; font-size:clamp(26px,3.4vw,34px); font-weight:800; letter-spacing:-.01em; line-height:1.2; text-align:center; }
+  h3 { margin:44px 0 10px; font-size:22px; font-weight:700; line-height:1.3; }
+  p { margin:0 0 14px; }
+  ol, ul { margin:0 0 14px; }
+  ol li, ul li { margin:4px 0; }
+
+  /* media */
+  figure { margin:22px 0; }
+  figure img { background:#fff; border:1px solid var(--line); border-radius:var(--radius); padding:12px; margin:0 auto; }
+  video { width:100%; border-radius:10px; background:#000; }
+  figcaption { margin-top:10px; font-size:14.5px; color:var(--muted); line-height:1.55; }
+  figcaption b { color:var(--ink); }
   .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:18px; align-items:start; }
-  @media (max-width:720px){ .grid2 { grid-template-columns:1fr; } h1{font-size:1.6rem;} }
+  .grid2 figure { margin:0; }
   .w50,.w60,.w70,.w80 { margin-left:auto; margin-right:auto; }
   .w50 { max-width:50%; } .w60 { max-width:60%; } .w70 { max-width:70%; } .w80 { max-width:80%; }
-  @media (max-width:720px){ .w50,.w60,.w70,.w80 { max-width:100%; } }
-  .stats { display:flex; gap:14px; justify-content:center; flex-wrap:wrap; margin:18px 0; }
-  .stat { flex:1 1 200px; max-width:280px; border:1px solid var(--border); border-radius:10px; padding:14px; text-align:center; }
-  .stat b { display:block; font-size:1.7rem; font-family:'Inter',sans-serif; color:var(--accent); }
-  .stat span { color:var(--muted); font-size:.88rem; }
-  table { border-collapse:collapse; width:100%; font-size:.93rem; margin:12px 0; }
-  th, td { border-bottom:1px solid var(--border); padding:8px 10px; text-align:left; vertical-align:top; }
-  th { background:#f6f8fa; font-weight:600; }
-  .note { background:#f6f8fa; border-radius:6px; padding:12px 16px; font-size:.93rem; color:#333; }
-  .takeaway { border-left:4px solid var(--accent); background:#f6f8fa; padding:12px 16px; border-radius:6px; margin:16px 0; }
-  ol li, ul li { margin:4px 0; }
-  video { width:100%; border-radius:8px; background:#000; display:block; }
   .vlabels { display:flex; gap:6px; margin-bottom:6px; }
-  .vlabels span { flex:1 1 0; min-width:0; text-align:center; font-size:.82rem; font-weight:600; color:var(--muted); font-family:'Inter',sans-serif; }
-  .tag { display:inline-block; font-size:.75rem; font-weight:700; padding:2px 8px; border-radius:999px; margin-bottom:6px; }
-  .ok { background:#dcfce7; color:#166534; } .bad { background:#fee2e2; color:#991b1b; }
-  .steps { counter-reset:s; list-style:none; padding:0; display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; margin:16px 0; }
-  .steps li { counter-increment:s; border:1px solid var(--border); border-radius:10px; padding:12px 14px; margin:0; font-size:.93rem; }
-  .steps li::before { content:counter(s); display:inline-flex; width:22px; height:22px; border-radius:50%; background:var(--accent); color:#fff; font-size:.8rem; font-weight:700; align-items:center; justify-content:center; margin-right:8px; }
-  footer { color:var(--muted); font-size:.85rem; text-align:center; padding:30px 0 50px; border-top:1px solid var(--border); }
-  a { color:var(--accent); }
+  .vlabels span { flex:1 1 0; min-width:0; text-align:center; font-size:14px; font-weight:600; color:var(--ink); }
+  .tag { display:inline-block; font-size:12.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; border-radius:999px; padding:2px 10px; margin-bottom:8px; }
+  .ok { color:var(--accent-ink); background:var(--accent-soft); }
+  .bad { color:var(--bad); background:var(--bad-soft); }
+
+  /* blocks */
+  .tldr { max-width:860px; margin:0 auto; font-size:18px; }
+  .tldr-title { text-align:center; font-weight:800; font-size:clamp(26px,3.4vw,34px); letter-spacing:-.01em; color:var(--accent-ink); margin-bottom:8px; }
+  .tldr ul { list-style:none; padding:0; margin:0; }
+  .tldr li { position:relative; padding-left:20px; margin:8px 0; }
+  .tldr li::before { content:""; position:absolute; left:3px; top:.65em; width:8px; height:8px; border-radius:50%; background:var(--accent); }
+  .tldr b { color:var(--accent-ink); }
+  .takeaway { border:1px solid var(--line); border-left:4px solid var(--accent); background:var(--accent-soft); padding:14px 18px; border-radius:10px; margin:22px 0; }
+  .stats { margin:26px auto; display:grid; grid-template-columns:repeat(4,1fr); gap:14px; }
+  .stat { background:#fff; border:1px solid var(--line); border-radius:var(--radius); padding:18px 14px; text-align:center; }
+  .stat b { display:block; font-size:34px; font-weight:800; color:var(--accent); line-height:1.1; letter-spacing:-.02em; }
+  .stat span { display:block; margin-top:6px; font-size:14px; color:var(--muted); line-height:1.45; }
+  .steps { counter-reset:s; list-style:none; padding:0; display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; margin:18px 0; }
+  .steps li { counter-increment:s; background:#fff; border:1px solid var(--line); border-radius:var(--radius); padding:14px 16px; margin:0; font-size:15.5px; }
+  .steps li::before { content:counter(s); display:inline-flex; width:24px; height:24px; border-radius:50%; background:var(--accent); color:#fff; font-size:13px; font-weight:700; align-items:center; justify-content:center; margin-right:8px; }
+  table { border-collapse:collapse; width:100%; font-size:15px; margin:14px 0 20px; background:#fff; border:1px solid var(--line); border-radius:var(--radius); overflow:hidden; }
+  th, td { padding:10px 12px; text-align:left; vertical-align:top; border-bottom:1px solid var(--line); }
+  th { background:#f7fcfb; font-weight:700; }
+  tr:last-child th, tr:last-child td { border-bottom:none; }
+  .links { text-align:center; line-height:2; }
+  footer { padding:30px 0 40px; text-align:center; color:var(--muted); font-size:14px; border-top:1px solid var(--line); }
+
+  @media (max-width:720px) {
+    body { font-size:16px; }
+    header.hero { padding-top:36px; }
+    .authors { font-size:16px; gap:2px 14px; }
+    section { padding:40px 0; }
+    .grid2 { grid-template-columns:1fr; }
+    .stats { grid-template-columns:1fr 1fr; }
+    .w50,.w60,.w70,.w80 { max-width:100%; }
+    figure img { padding:6px; }
+  }
 </style>
 </head>
 <body>
-<div class="wrap">
-<header>
-  <h1>Scene-Aware Humanoid Locomotion via<br>Unreal Engine based Data Generation</h1>
-  <p class="subtitle">Characters in games walk over uneven terrain effortlessly. Can a game engine become an infinite source of terrain-aware humanoid motion data?</p>
-  <div class="authors"><a href="https://kyungminn.github.io/">Kyungmin Lee</a>, &nbsp;Yoonsang Oh</div>
-  <div class="affil">KAIST AI</div>
-  <div class="status">Discontinued research project &middot; Oct 2025 &ndash; May 2026</div>
-  <div class="buttons">
-    <a class="btn" href="#prior">Preliminary study</a>
-    <a class="btn ghost" href="#idea">Building G1 in Unreal</a>
-    <a class="btn ghost" href="#results">Stair results</a>
-    <a class="btn ghost" href="#conclusion">Conclusion</a>
+<nav class="nav">
+  <div class="wrap">
+    <a class="brand" href="#top"><span>Unreal</span>Humanoid</a>
+    <a href="#motivation">Motivation</a>
+    <a href="#prior">Preliminary</a>
+    <a href="#idea">Idea</a>
+    <a href="#stairs">Stairs</a>
+    <a href="#results">Benchmark</a>
+    <a href="#conclusion">Conclusion</a>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <div class="wrap">
+    <h1>Scene-Aware Humanoid Locomotion</h1>
+    <p class="subtitle">via Unreal Engine based Data Generation</p>
+    <p class="question">Characters in games walk over uneven terrain effortlessly. Can a game engine become an infinite source of terrain-aware humanoid motion data?</p>
+    <div class="authors">
+      <span><a href="https://kyungminn.github.io/">Kyungmin Lee</a></span>
+      <span>Yoonsang Oh</span>
+      <span><a href="https://sites.google.com/site/jaegulchoo/">Jaegul Choo</a></span>
+      <span><a href="https://joonleesky.github.io/">Hojoon Lee</a></span>
+      <span><a href="https://beomjoonkim.github.io/">Beomjoon Kim</a></span>
+    </div>
+    <div class="affils"><span>KAIST AI</span></div>
+    <div class="status">Discontinued research project &middot; Oct 2025 &ndash; May 2026</div>
+    <div class="buttons">
+      <a class="btn" href="#prior">Preliminary study</a>
+      <a class="btn ghost" href="#idea">Building G1 in Unreal</a>
+      <a class="btn ghost" href="#results">Stair benchmark</a>
+      <a class="btn ghost" href="#conclusion">Conclusion</a>
+    </div>
+  </div>
+  <div class="wrap wide hero-video">
+    <figure><video src="static/videos/hero_city.mp4" autoplay muted loop playsinline></video>
+    <figcaption><b>Idea.</b> Instead of reconstructing terrain and human motion from monocular video, drive a Unitree G1 character through realistic Unreal Engine scenes and record (terrain, motion) pairs that are aligned by construction.</figcaption></figure>
   </div>
 </header>
 
-<figure><video src="static/videos/hero_city.mp4" autoplay muted loop playsinline></video>
-<figcaption><b>Idea.</b> Instead of reconstructing terrain and human motion from monocular video, drive a Unitree G1 character through realistic Unreal Engine scenes and record (terrain, motion) pairs that are aligned by construction.</figcaption></figure>
-
-<section>
-  <div class="tldr"><b>TL;DR</b>
+<section class="alt">
+<div class="wrap">
+  <div class="tldr"><div class="tldr-title">TL;DR</div>
   <ul>
     <li>AMP matches pure RL on uneven terrain but uses <b>less energy</b>: human motion is worth having.</li>
     <li>Video-based data (VideoMimic, CRISP) gets terrain wrong; <b>feet sink into steps</b>.</li>
     <li>So we put the <b>G1 into Unreal Engine</b> and generated stair data automatically.</li>
     <li>Student: <b>87.5%</b> on training data, only <b>~50%</b> on unseen stairs vs. <b>~94%</b> for Hiking in the Wild. We stopped.</li>
   </ul></div>
+</div>
 </section>
 
 <section id="motivation">
+<div class="wrap">
   <h2>Motivation</h2>
   <p>Humanoid locomotion on uneven terrain (stairs, ledges, slopes) is mostly tackled by one of the following families, each with its own limitation at the time we started:</p>
   <table>
@@ -97,67 +173,83 @@
     <tr><td><b>Motion tracking</b> (BeyondMimic, SONIC)</td><td>Natural motion with a simple reward, but the training data is almost all flat-ground motion capture with no scene.</td></tr>
     <tr><td><b>Video real-to-sim</b> (VideoMimic, CRISP)</td><td>Scene reconstruction and scene-motion alignment from monocular video are inaccurate (feet float or penetrate), retargeting from a different body adds errors, and every terrain needs full-body footage plus heavy processing.</td></tr>
   </table>
-  <p>Unreal Engine, on the other hand, has its own physics, and game characters walk over uneven terrain all the time. <b>If we could put a G1 into Unreal, generate maps automatically and build a controller that walks the G1 around by itself, we could generate unlimited uneven-terrain humanoid locomotion data.</b> That was the starting point of this project.</p>
+  <p>In other words, what is missing is natural human-like motion that is correctly aligned with uneven terrain. Game engines, on the other hand, seem to have exactly this: Unreal Engine has its own physics, and game characters walk over uneven terrain all the time. <b>So if we could put a G1 into Unreal, generate maps automatically and build a controller that walks the G1 around by itself, we could generate unlimited uneven-terrain humanoid locomotion data.</b> That was the starting point of this project.</p>
+</div>
 </section>
 
-<section id="prior">
+<section id="prior" class="alt">
+<div class="wrap">
   <h2>Preliminary study: what does human motion buy us?</h2>
-  <p>To see how far RL alone gets, we trained two policies on a terrain curriculum whose difficulty increases gradually from 0 to 1:</p>
+  <p>Before building anything, we first wanted to know how much a human motion prior actually helps on uneven terrain. To find out, we compared two RL-based policies:</p>
   <ul>
     <li><b>Pure RL</b>: only a "don't fall" reward and regularization rewards.</li>
-    <li><b><a href="https://arxiv.org/abs/2104.02180">AMP</a></b>: the same, plus a human motion prior.</li>
+    <li><b><a href="https://arxiv.org/abs/2104.02180">AMP</a></b>: the same, plus a human motion prior learned from the reference motions below.</li>
   </ul>
+  <figure><video data-src="static/videos/amp_motion_prior.mp4" style="aspect-ratio:1600/240" muted loop playsinline></video>
+  <figcaption>Human reference motions used as the AMP motion prior.</figcaption></figure>
+
+  <p>Next, to compare the two fairly, we built the following terrain benchmark. Both policies are trained on the same terrains, with a curriculum whose difficulty increases gradually from 0 to 1:</p>
   <div class="grid2 w70">
     <figure><img src="static/images/map_difficulty_0.jpg" alt="Terrain map at difficulty 0"><figcaption>Terrains at difficulty 0.</figcaption></figure>
     <figure><img src="static/images/map_difficulty_1.jpg" alt="Terrain map at difficulty 1"><figcaption>Terrains at difficulty 1.</figcaption></figure>
   </div>
-  <figure><video data-src="static/videos/amp_motion_prior.mp4" style="aspect-ratio:1600/240" muted loop playsinline></video>
-  <figcaption>Human motion clips used as the AMP motion prior.</figcaption></figure>
 
+  <p>After training on this benchmark, the two policies behave quite differently.</p>
   <figure>
     <div class="vlabels" data-layout="prior_purerl_vs_amp"><span>Pure RL</span><span>AMP</span></div>
     <video data-src="static/videos/prior_purerl_vs_amp.mp4" style="aspect-ratio:2026/540" muted loop playsinline></video>
-    <figcaption>Pure RL traverses the terrain but keeps its center of mass very low to avoid falling, which looks unnatural. AMP moves much more smoothly, but does not traverse the terrain better than pure RL.</figcaption>
+    <figcaption>Pure RL and AMP policies on the terrain benchmark.</figcaption>
   </figure>
-  <figure class="w70"><img src="static/images/pureRL_AMP_SR.png" alt="Success rate: pure RL vs AMP"><figcaption><b>Success rate.</b> Both are close to 100% on most terrains; AMP fails almost entirely on gaps (3.7% vs 72.9%).</figcaption></figure>
-  <figure class="w70"><img src="static/images/pureRL_amp_energy.png" alt="Energy: pure RL vs AMP"><figcaption><b>Energy consumption.</b> AMP uses clearly less energy on every terrain except gaps.</figcaption></figure>
-  <div class="takeaway">Human motion is a good reference for using energy efficiently. So what if we <b>collected lots of human motion on uneven terrain</b> and trained a tracking policy on it, like <a href="https://nvlabs.github.io/GEAR-SONIC/">SONIC</a>?</div>
+  <p>In the video above, pure RL does traverse the terrain, but it keeps its center of mass very low to avoid falling, which looks unnatural. AMP, in contrast, walks much more naturally. However, it does not lift its feet very high, so it looks less stable when stepping over tall obstacles or high steps. The natural question, then, is how these differences show up in the numbers.</p>
+  <figure class="w70"><img src="static/images/pureRL_AMP_SR.png" alt="Success rate: pure RL vs AMP"><figcaption>Success rate of pure RL and AMP per terrain type.</figcaption></figure>
+  <p>Surprisingly, the success rates are almost the same. As the chart above shows, both policies are near 100% on almost every terrain type, from slopes and rough ground to stairs. The one clear exception is gaps, where AMP almost never succeeds (3.7% vs. 72.9%). If the motion prior does not improve success, where does it help?</p>
+  <figure class="w70"><img src="static/images/pureRL_amp_energy.png" alt="Energy: pure RL vs AMP"><figcaption>Average energy consumption of pure RL and AMP per terrain type.</figcaption></figure>
+  <p>The answer is <b>energy</b>. As the chart above shows, AMP spends less energy than pure RL on 10 of the 11 terrains, for example 1.84 vs. 2.82 on flat ground and 2.73 vs. 4.65 on boxes. While pure RL gets across by keeping its center of mass low, AMP walks more like a person, and this turns out to be cheaper.</p>
+  <div class="takeaway">In short, human motion is a good reference for using energy efficiently. So what if we <b>collected lots of human motion on uneven terrain</b> and trained a tracking policy on it, like <a href="https://nvlabs.github.io/GEAR-SONIC/">SONIC</a>?</div>
 
   <h3>Getting uneven-terrain human motion from video</h3>
-  <p>Two existing works extract human motion together with the terrain from video: <a href="https://www.videomimic.net/">VideoMimic</a> and <a href="https://crisp-real2sim.github.io/CRISP-Real2Sim/">CRISP</a>. We started with VideoMimic as the baseline.</p>
+  <p>To do that, however, we first need human motion on uneven terrain, which motion-capture datasets rarely contain. The most practical source is video, and two existing works extract human motion together with the terrain from it: <a href="https://www.videomimic.net/">VideoMimic</a> and <a href="https://crisp-real2sim.github.io/CRISP-Real2Sim/">CRISP</a>. We started with VideoMimic as the baseline. Given a monocular video, it reconstructs the surrounding scene and the person's motion, and then retargets that motion onto the humanoid, so that each video yields a (terrain, motion) pair.</p>
   <figure>
     <div class="vlabels" data-layout="videomimic_results"><span>Input video</span><span>Reconstructed scene + motion</span><span>Reconstructed terrain + G1</span></div>
     <video data-src="static/videos/videomimic_results.mp4" style="aspect-ratio:2394/420" muted loop playsinline></video>
-    <figcaption><b>VideoMimic.</b> The terrain is not reconstructed accurately and the feet dig into the steps: the result is physically unstable.</figcaption>
+    <figcaption>VideoMimic on stair videos.</figcaption>
   </figure>
-  <p>CRISP uses a stronger open-source video-to-motion model (<a href="https://github.com/zju3dv/GVHMR">GVHMR</a>) and a better depth model (<a href="https://github.com/microsoft/moge">MoGe</a>), so we expected higher quality.</p>
+  <p>As the video above shows, however, the terrain is not reconstructed accurately and the feet dig into the steps, so the result is physically unstable. This is a serious problem for motion tracking: if the reference foot sits inside a step, the policy is asked to imitate something that cannot happen physically, and it either ignores the reference or learns strange behavior to satisfy it.</p>
+  <p>Could a stronger pipeline fix this? CRISP is a natural candidate, since it replaces the key components with better ones: a stronger open-source video-to-motion model (<a href="https://github.com/zju3dv/GVHMR">GVHMR</a>) and a better depth model (<a href="https://github.com/microsoft/moge">MoGe</a>). We therefore expected noticeably higher quality.</p>
   <figure class="w70">
     <div class="vlabels" data-layout="crisp_results"><span>Input video</span><span>CRISP reconstruction</span></div>
     <video data-src="static/videos/crisp_results.mp4" style="aspect-ratio:1342/540" muted loop playsinline></video>
-    <figcaption><b>CRISP.</b> Thanks to the better depth, stairs are represented much better, but the alignment is still poor: toes still sink into the steps.</figcaption>
+    <figcaption>CRISP on a stair video.</figcaption>
   </figure>
+  <p>Indeed, thanks to the better depth, the stairs are represented much better than with VideoMimic. Even so, the alignment is still poor, and the toes still sink into the steps.</p>
   <div class="takeaway">Even with better models, extracting terrain and motion from video leaves them misaligned. <b>Do we have to reconstruct them from video at all? What if we started from a world where terrain and motion are aligned by construction?</b></div>
+</div>
 </section>
 
 <section id="idea">
+<div class="wrap">
   <h2>Idea: put the humanoid into the game engine</h2>
-  <p>Think about video games: characters walk up stairs and over rough ground with ease, and their feet land on the terrain because the engine knows exactly where the terrain is. So instead of extracting terrain and human motion from video, why not put the humanoid <b>directly into a game engine</b> and use its motion as the reference for motion tracking? This also removes <b>retargeting</b> issues: when human and humanoid bodies differ, retargeted motions become physically odd or hard to follow, but a humanoid animated inside the engine has no such gap.</p>
-  <p>To animate a humanoid in Unreal Engine we need two things:</p>
+  <p>Think about video games: characters walk up stairs and over rough ground with ease, and their feet land on the terrain because the engine knows exactly where the terrain is. So instead of extracting terrain and human motion from video, why not put the humanoid <b>directly into a game engine</b> and use its motion as the reference for motion tracking? As a bonus, this also removes <b>retargeting</b> issues: when human and humanoid bodies differ, retargeted motions become physically odd or hard to follow, but a humanoid animated inside the engine has no such gap.</p>
+  <p>To make this work, we need two things to animate a humanoid in Unreal Engine:</p>
   <ol>
     <li><b>Base motions</b> that the character plays repeatedly;</li>
     <li>A <b>controller</b> that picks the right motion for the terrain at the right moment.</li>
   </ol>
-  <p>Rather than starting from scratch, we built on <a href="https://www.fab.com/listings/ef9651a4-fb55-4866-a2d9-1b38b028f9c7">Advanced Locomotion System V4</a> (ALS v4), a free Unreal asset. Its contacts are quite clean, so our first goal was to turn ALS v4 into a Unitree G1 version, reusing its motions and controller.</p>
+  <p>Building both from scratch would be a big project, so we looked for an existing one to start from and found <a href="https://www.fab.com/listings/ef9651a4-fb55-4866-a2d9-1b38b028f9c7">Advanced Locomotion System V4</a> (ALS v4), a free Unreal asset that provides both.</p>
   <figure class="w70"><video data-src="static/videos/als_example.mp4" style="aspect-ratio:1600/990" muted loop playsinline></video>
   <figcaption>Advanced Locomotion System V4 running in Unreal Engine.</figcaption></figure>
+  <p>As the video shows, its foot contacts are quite clean, even on uneven ground. This made ALS v4 a good starting point, so our first goal was to turn it into a Unitree G1 version by reusing its motions and controller. If the same system could drive a G1 instead of the mannequin, every frame it plays would already be a (terrain, G1 motion) pair, with no scene reconstruction and no human-to-robot retargeting in between. That is exactly the data the video-based pipelines were struggling to produce.</p>
 
   <h3>Base motions: why we retargeted ALS instead of using MoCap</h3>
-  <p>We first tried to find motions similar to the ALS v4 base motions in public MoCap (<a href="https://amass.is.tue.mpg.de/">AMASS</a>). Finding matching motions was hard enough, but there was a more basic problem: Unreal plays motion clips <b>in a loop</b>. A walk cycle that starts on the left foot must return exactly to the same pose, or the transition is visibly jerky. Seamlessly looping clips are almost impossible to find in public datasets, so we decided to retarget the ALS v4 motion assets themselves to the G1.</p>
+  <p>For the base motions, our first attempt was to find motions similar to the ALS v4 ones in public MoCap (<a href="https://amass.is.tue.mpg.de/">AMASS</a>). Finding matching motions was hard enough on its own, but there was a more basic problem: Unreal plays motion clips <b>in a loop</b>. A walk cycle that starts on the left foot must return exactly to the same pose, or the transition is visibly jerky.</p>
   <figure><img src="static/images/alsv4_basic_motions.png" alt="ALS v4 base motions"><figcaption>ALS v4 base motion assets.</figcaption></figure>
+  <p>To see why looping matters, note that ALS drives its character with a set of short clips like these: walk, run and sprint cycles in several directions, plus poses that are blended together. Each clip is played over and over, and the controller switches or blends between them depending on speed and direction.</p>
   <figure class="w60"><video data-src="static/videos/ue_loop_clip.mp4" style="aspect-ratio:1600/686" muted loop playsinline></video>
-  <figcaption>An Unreal motion clip playing in an infinite loop. It looks natural only because the first and last frames match exactly.</figcaption></figure>
+  <figcaption>An Unreal motion clip playing in an infinite loop.</figcaption></figure>
+  <p>The clip above loops forever and still looks natural, but only because its first and last frames match exactly. Such seamlessly looping clips, however, are almost impossible to find in public datasets. We therefore decided to retarget the ALS v4 motion assets themselves to the G1.</p>
 
   <h3>Retargeting ALS v4 to the G1</h3>
+  <p>Retargeting itself is not trivial either. Mapping mannequin joints directly onto G1 joints does not work well, because the two bodies have different proportions. Instead, we used SMPL as a bridge: it is a parametric human body whose shape can be changed while the motion stays the same, so we can first match the mannequin, then morph the body into the G1's proportions, and only then transfer the motion to the robot.</p>
   <ol class="steps">
     <li>Convert the ALS v4 mannequin motion into an SMPL body with the mannequin's shape.</li>
     <li>Find the SMPL shape parameters of the G1 and swap them into the motion from step 1.</li>
@@ -169,46 +261,54 @@
     <video data-src="static/videos/retarget_results.mp4" style="aspect-ratio:2320/480" muted loop playsinline></video>
     <figcaption>Retargeted G1 motions.</figcaption>
   </figure>
+  <p>Moreover, because the source clips loop seamlessly, the retargeted G1 clips do too. As a result, they can be plugged straight back into the ALS controller in place of the mannequin's animations.</p>
   <figure class="w70"><video data-src="static/videos/als_g1_first.mp4" style="aspect-ratio:1594/1080" muted loop playsinline></video>
   <figcaption>The retargeted motions driven by the ALS controller: the first G1 version of ALS.</figcaption></figure>
+  <p>At first glance, this works: the G1 walks and runs around the scene under the ALS controller. Looking closer at the legs on uneven ground, however, reveals a problem.</p>
 
   <h3>Problem: Unreal's IK does not fit the G1</h3>
-  <p>Unreal's built-in IK is not accurate for the G1. It worked for the ALS mannequin because the mannequin's hip and ankle are spherical joints, so each leg has only three joints and the optimized <b>two-bone IK</b> applies. The G1 instead has one joint per degree of freedom, not spherical joints, so using the two-bone IK as-is gives wrong solutions.</p>
-  <figure class="w70"><img src="static/images/ue_ik_problem.jpg" alt="Two-bone IK problem on the G1"><figcaption>Two-bone IK on the mannequin (left) vs. the G1 (middle, right): the G1 leg cannot reach the target correctly.</figcaption></figure>
-  <p>We replaced it with our own general IK for the G1's kinematic chain.</p>
+  <p>The problem lies in foot IK, which adjusts the legs so that the feet land on the terrain. Unreal's built-in IK is not accurate for the G1. It worked for the ALS mannequin because the mannequin's hip and ankle are spherical joints, so each leg has only three joints and the optimized <b>two-bone IK</b> applies. The G1, in contrast, has one joint per degree of freedom, not spherical joints, so using the two-bone IK as-is gives wrong solutions.</p>
+  <figure class="w70"><img src="static/images/ue_ik_problem.jpg" alt="Two-bone IK problem on the G1"><figcaption>Two-bone IK on the ALS mannequin (left) and on the G1 (middle, right).</figcaption></figure>
+  <p>As the figure shows, the two-bone IK cannot place the G1's leg correctly. We therefore replaced it with our own general IK that solves over the G1's actual leg joints, so the foot can reach the target on the terrain with a pose the G1 can actually take.</p>
   <figure class="w50"><video data-src="static/videos/ue_ik_fixed.mp4" style="aspect-ratio:1108/1080" muted loop playsinline></video>
   <figcaption>Results with the custom G1 IK in Unreal.</figcaption></figure>
-  <p>With the G1 IK in place, the G1 could now walk around Unreal scenes with its feet on the terrain. We let it walk over ramps and climb-up obstacles in Unreal, <b>recorded its motion together with the terrain</b>, and used these recordings as reference motions to train tracking policies in simulation with <a href="https://beyondmimic.github.io/">BeyondMimic</a>. The trained policies walk on a range of ramps:</p>
+  <p>With the G1 IK in place, the G1 could finally walk around Unreal scenes with its feet on the terrain. This let us test the whole idea end to end: we let it walk over ramps and climb-up obstacles in Unreal, <b>recorded its motion together with the terrain</b>, and used these recordings as reference motions to train tracking policies in simulation with <a href="https://beyondmimic.github.io/">BeyondMimic</a>. As shown below, the trained policies walk on ramps of various slopes:</p>
   <figure>
     <div class="vlabels" data-layout="ramp_results"><span>10&deg; ramp</span><span>20&deg; ramp</span><span>30&deg; ramp</span></div>
     <video data-src="static/videos/ramp_results.mp4" style="aspect-ratio:2172/540" muted loop playsinline></video>
     <figcaption>Policies trained on motion data collected in Unreal, tracking ramp motions in simulation.</figcaption>
   </figure>
+</div>
 </section>
 
-<section id="stairs">
+<section id="stairs" class="alt">
+<div class="wrap">
   <h2>Stairs: abrupt height changes</h2>
-  <p>On stairs, where the height changes abruptly, the IK breaks down:</p>
+  <p>Since ramps worked, we next moved on to stairs, where the height changes abruptly, still using the same walk motion and IK.</p>
+  <figure class="w70"><video data-src="static/videos/ue_stair_ik_problem.mp4" style="aspect-ratio:1542/1080" muted loop playsinline></video>
+  <figcaption>The G1 walking up stairs with the walk motion and our IK.</figcaption></figure>
+  <p>As the video above shows, unlike on ramps, the IK breaks down in two ways:</p>
   <ol>
     <li>joint angles change very sharply as the height changes;</li>
     <li>the feet do not land where they should on the steps.</li>
   </ol>
-  <figure class="w70"><video data-src="static/videos/ue_stair_ik_problem.mp4" style="aspect-ratio:1542/1080" muted loop playsinline></video>
-  <figcaption>IK failure on stairs with the walk motion.</figcaption></figure>
-  <p>We tried detecting height changes in front of the G1 and planning a foot trajectory that never passes through the steps. But between our limited Unreal knowledge and a task that was turning into pure engineering rather than research, it took too long. Instead, we <b>recorded dedicated stair-climbing motions</b> so that the G1 climbs naturally.</p>
+  <p>This happens because IK only corrects a walk motion that was made for flat ground. On a ramp the height changes gradually, so small corrections every frame are enough. On a staircase the height jumps at every step edge, so the IK target jumps too, and the leg has to change pose abruptly while the underlying walk cycle knows nothing about where the step is.</p>
+  <p>To fix this, we first tried detecting height changes in front of the G1 and planning a foot trajectory that never passes through the steps. However, between our limited Unreal knowledge and a task that was turning into pure engineering rather than research, this took too long. Instead, we took a simpler route and <b>recorded dedicated stair-climbing motions</b> so that the G1 climbs naturally.</p>
   <figure class="w50"><video data-src="static/videos/stair_motion_capture.mp4" style="aspect-ratio:1216/1080" muted loop playsinline></video>
   <figcaption>Captured stair motion.</figcaption></figure>
-  <p>With Unreal's <b>blend space</b> (given anchor motions, it fills in the space between them by linear interpolation), we can also generate motions beyond the anchor motions:</p>
+  <p>A single recorded motion, though, only covers one step size, while real staircases come in many heights and depths. To cover them, we used Unreal's <b>blend space</b>: given anchor motions, it fills in the space between them by linear interpolation, so we can generate motions beyond the recorded ones:</p>
   <figure>
     <div class="vlabels" data-layout="stair_blendspace"><span>Stair up (blend space)</span><span>Stair down (blend space)</span></div>
     <video data-src="static/videos/stair_blendspace.mp4" style="aspect-ratio:1238/540" muted loop playsinline></video>
     <figcaption>Stair motions generated with a blend space.</figcaption>
   </figure>
-  <p>This still does not remove the choppy feel when the step height changes:</p>
+  <p>This way, the recorded motions act as anchors and the blend space interpolates between them for the step sizes in between, so a handful of recordings covers a whole range of staircases.</p>
   <figure class="w70"><video data-src="static/videos/stair_add_motion_30depth.mp4" style="aspect-ratio:1488/1080" muted loop playsinline></video>
-  <figcaption>Stair motion on 30 cm-deep steps: transitions are still choppy.</figcaption></figure>
+  <figcaption>The G1 climbing 30 cm-deep stairs with the stair motions.</figcaption></figure>
+  <p>As the video shows, however, the stair motions still do not remove the choppy feel when the step height changes.</p>
 
   <h3>Before vs. after adding stair motions</h3>
+  <p>Despite this remaining issue, does the change actually help the tracking policy? To check, we generated reference motions on the same 30 cm-deep stairs twice, once with the walk motion plus IK and once with the new stair motions, and trained a tracking policy on each.</p>
   <figure><span class="tag bad">before</span> walk motion + IK
     <div class="vlabels" data-layout="stair_before" style="margin-top:8px"><span>Unreal reference</span><span>Tracking in simulation</span></div>
     <video data-src="static/videos/stair_before.mp4" style="aspect-ratio:1498/540" muted loop playsinline></video>
@@ -216,13 +316,15 @@
   <figure><span class="tag ok">after</span> dedicated stair motions
     <div class="vlabels" data-layout="stair_after" style="margin-top:8px"><span>Unreal reference</span><span>Tracking in simulation</span></div>
     <video data-src="static/videos/stair_after.mp4" style="aspect-ratio:1470/540" muted loop playsinline></video>
-    <figcaption>With stair motions, the movement becomes more natural.</figcaption>
-  </figure>
+    </figure>
+  <p>Comparing the two, the movement with the dedicated stair motions is clearly more natural, both in the Unreal reference and in the tracked result. With this, we had a way to produce reasonable stair data in Unreal.</p>
+</div>
 </section>
 
 <section id="results">
+<div class="wrap">
   <h2>Stair benchmark</h2>
-  <p>We then checked whether, restricted to stairs, this pipeline beats other baselines.</p>
+  <p>The remaining question was whether this data is actually better than the alternatives. To answer it, we focused on stairs and built a full pipeline in four steps:</p>
   <ol class="steps">
     <li><b>Terrain generation</b>: randomized spiral and linear staircases with random step width and height.</li>
     <li><b>Automatic data collection</b> with Unreal's auto navigation.</li>
@@ -231,6 +333,7 @@
   </ol>
   <figure class="w80"><video data-src="static/videos/stair_generation_pipeline.mp4" style="aspect-ratio:1600/986" muted loop playsinline></video>
   <figcaption>Steps 1&ndash;2: procedural stair generation and automatic navigation in Unreal.</figcaption></figure>
+  <p>Once set up, steps 1 and 2 need no human in the loop at all: a new staircase is generated, the G1 navigates it on its own, and its motion is recorded together with the terrain. As a result, it collects about six hours of motion data per hour of wall-clock time, far faster than recording and processing videos. The numbers below summarize the results of the following steps.</p>
   <div class="stats">
     <div class="stat"><b>~6 h / h</b><span>motion data collected per wall-clock hour</span></div>
     <div class="stat"><b>94%</b><span>teacher success (training data)</span></div>
@@ -239,17 +342,17 @@
   </div>
 
   <h3>Teacher: terrain-aware multi-motion tracking</h3>
-  <p>Data: 200 motions on linear staircases with varied step count, width and height. On this training data, the teacher reaches a <b>94%</b> success rate.</p>
+  <p>For step 3, we trained the teacher, a multi-motion tracking policy that sees the reference motion and the terrain around it. As training data, we collected 200 motions on linear staircases with varied step count, width and height. On this training data, the teacher reaches a <b>94%</b> success rate.</p>
   <figure><span class="tag ok">success</span>
     <video data-src="static/videos/teacher_success.mp4" style="aspect-ratio:2172/540" muted loop playsinline></video>
   </figure>
   <figure><span class="tag bad">failure</span>
     <video data-src="static/videos/teacher_fail.mp4" style="aspect-ratio:2172/540" muted loop playsinline></video>
-    <figcaption>Most failures are ascending motions where the blend space output drifts far from the anchor motions.</figcaption>
-  </figure>
+    </figure>
+  <p>Looking at the failures more closely, most of them are ascending motions where the blend space output drifts far from the anchor motions.</p>
 
   <h3>Student: terrain-aware locomotion</h3>
-  <p>The student is distilled from the teacher with DAgger. It only sees the <b>root</b> of the reference motion and the <b>terrain map</b>, so given just a root trajectory it can follow it. On the training data, the student reaches <b>87.5%</b> success.</p>
+  <p>For step 4, the student is distilled from the teacher with DAgger. Unlike the teacher, it only sees the <b>root</b> of the reference motion and the <b>terrain map</b>, so given just a root trajectory it can follow it. On the training data, the student reaches <b>87.5%</b> success. This is the policy we would actually deploy, because at test time there is no full-body reference motion, only where the robot should go and what the terrain looks like.</p>
   <figure><span class="tag ok">success</span>
     <video data-src="static/videos/student_success.mp4" style="aspect-ratio:2172/540" muted loop playsinline></video>
   </figure>
@@ -258,33 +361,41 @@
   </figure>
 
   <h3>How well does the student generalize?</h3>
+  <p>However, success on the training data only shows that the student can reproduce the staircases it was trained on. What really matters is whether it handles staircases it has never seen, so we built a benchmark with a grid of step heights and depths:</p>
   <table style="max-width:560px;margin:12px auto">
     <tr><th>Step height</th><td>15&ndash;35 cm, in 5 cm increments</td></tr>
     <tr><th>Step depth</th><td>height + 5 cm &ndash; 70 cm, in 5 cm increments</td></tr>
     <tr><th>Number of steps</th><td>6</td></tr>
     <tr><th>Success</th><td>reaching the final goal</td></tr>
   </table>
-  <figure><img src="static/images/student_generalization_results.png" alt="Student generalization results"><figcaption><b>Student success rate on the benchmark.</b> Overall only about <b>50%</b> (43 / 80 episodes), far below its 87.5% on the training data. Performance drops as steps get taller (ascending 73% &rarr; 14%, descending 80% &rarr; 0%).</figcaption></figure>
+  <figure><img src="static/images/student_generalization_results.png" alt="Student generalization results"><figcaption>Student success rate per step height on the benchmark.</figcaption></figure>
+  <p>As the chart shows, overall success is only about <b>50%</b> (43 / 80 episodes), far below the 87.5% on the training data, and it drops as steps get taller (ascending 73% &rarr; 14%, descending 80% &rarr; 0%). In other words, the student works on staircases similar to its training data, but not much beyond them.</p>
 
   <h3>Baseline: Hiking in the Wild</h3>
-  <p>On the same benchmark we trained <a href="https://project-instinct.github.io/hiking-in-the-wild/">Hiking in the Wild</a>, an advanced form of AMP. It reaches about <b>94%</b> success.</p>
+  <p>How does this compare to a method without any Unreal data? For comparison, we took the publicly released checkpoint of <a href="https://project-instinct.github.io/hiking-in-the-wild/">Hiking in the Wild</a>, an advanced form of AMP, and evaluated it on the same benchmark without any retraining. It reaches about <b>94%</b> success.</p>
   <figure>
     <video data-src="static/videos/hiking_results.mp4" style="aspect-ratio:1926/540" muted loop playsinline></video>
-    <figcaption>Hiking in the Wild on the stair benchmark.</figcaption>
+    <figcaption>The public Hiking in the Wild checkpoint on the stair benchmark.</figcaption>
   </figure>
+  <p>This was the deciding result. Hiking in the Wild needs none of the Unreal pipeline, no retargeting, custom IK, recorded stair motions or data generation, and still clearly outperforms our student on the same staircases.</p>
+</div>
 </section>
 
-<section id="conclusion">
+<section id="conclusion" class="alt">
+<div class="wrap">
   <h2>Conclusion</h2>
+  <p>Looking back at the whole project, two lessons stand out.</p>
   <ul>
     <li><b>Simple uneven terrain without obstacles is mostly solved by AMP-style methods.</b> Solving it the hard way with Unreal Engine is not efficient.</li>
     <li><b>Unreal Engine has a high ceiling</b>, but reaching it requires high-quality base motions suited to each terrain and a controller that uses the right motion at the right place. That takes a great deal of effort, and authoring animation is engineering work rather than research.</li>
   </ul>
+</div>
 </section>
 
 <section>
+<div class="wrap">
   <h2>Related work</h2>
-  <p style="text-align:center">
+  <p class="links">
     <a href="https://arxiv.org/abs/2104.02180">AMP</a> &middot;
     <a href="https://project-instinct.github.io/hiking-in-the-wild/">Hiking in the Wild</a> &middot;
     <a href="https://nvlabs.github.io/GEAR-SONIC/">SONIC</a> &middot;
@@ -296,13 +407,15 @@
     <a href="https://amass.is.tue.mpg.de/">AMASS</a> &middot;
     <a href="https://www.fab.com/listings/ef9651a4-fb55-4866-a2d9-1b38b028f9c7">ALS v4</a>
   </p>
+</div>
 </section>
 
 <footer>
+<div class="wrap">
   This page summarizes an unpublished, discontinued project.<br>
   Contact: <a href="mailto:kmlee@kaist.ac.kr">kmlee@kaist.ac.kr</a> &middot; <a href="https://kyungminn.github.io/">kyungminn.github.io</a>
-</footer>
 </div>
+</footer>
 <script>
   // Label widths follow each clip's width inside the horizontally concatenated video.
   const LAYOUT = {"prior_purerl_vs_amp": [1000, 1020], "videomimic_results": [746, 1016, 620], "crisp_results": [404, 932], "retarget_results": [784, 840, 684], "stair_blendspace": [606, 626], "stair_before": [772, 720], "stair_after": [744, 720]};

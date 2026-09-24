@@ -4,4 +4,4 @@ Project page for a **discontinued** research project (Oct 2025 – May 2026) on 
 
 🔗 **https://kyungminn.github.io/unreal-humanoid-loco/**
 
-Kyungmin Lee, Yoonsang Oh · KAIST AI
+Kyungmin Lee, Yoonsang Oh, Jaegul Choo, Hojoon Lee, Beomjoon Kim · KAIST AI
