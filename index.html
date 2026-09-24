@@ -178,11 +178,11 @@
   <p>We replaced it with our own general IK for the G1's kinematic chain.</p>
   <figure class="w50"><video data-src="static/videos/ue_ik_fixed.mp4" style="aspect-ratio:1108/1080" muted loop playsinline></video>
   <figcaption>Results with the custom G1 IK in Unreal.</figcaption></figure>
-  <p>With this, we created reference motions for ramps and climbing up and trained tracking policies with <a href="https://beyondmimic.github.io/">BeyondMimic</a>. The G1 walks on a range of ramps:</p>
+  <p>With the G1 IK in place, the G1 could now walk around Unreal scenes with its feet on the terrain. We let it walk over ramps and climb-up obstacles in Unreal, <b>recorded its motion together with the terrain</b>, and used these recordings as reference motions to train tracking policies in simulation with <a href="https://beyondmimic.github.io/">BeyondMimic</a>. The trained policies walk on a range of ramps:</p>
   <figure>
     <div class="vlabels" data-layout="ramp_results"><span>10&deg; ramp</span><span>20&deg; ramp</span><span>30&deg; ramp</span></div>
     <video data-src="static/videos/ramp_results.mp4" style="aspect-ratio:2172/540" muted loop playsinline></video>
-    <figcaption>Tracking Unreal-generated ramp motions.</figcaption>
+    <figcaption>Policies trained on motion data collected in Unreal, tracking ramp motions in simulation.</figcaption>
   </figure>
 </section>
 
