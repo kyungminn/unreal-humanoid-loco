@@ -54,7 +54,6 @@
 </head>
 <body>
 <div class="wrap">
-
 <header>
   <h1>Scene-Aware Humanoid Locomotion via<br>Unreal Engine based Data Generation</h1>
   <p class="subtitle">Can a game engine generate the terrain + motion data that motion-tracking humanoids are missing?</p>
@@ -62,148 +61,161 @@
   <div class="affil">KAIST AI</div>
   <div class="status">Discontinued research project &middot; Oct 2025 &ndash; May 2026</div>
   <div class="buttons">
-    <a class="btn" href="#results">Results</a>
+    <a class="btn" href="#journey">Development log</a>
+    <a class="btn ghost" href="#results">Results</a>
     <a class="btn ghost" href="#why-stopped">Why we stopped</a>
-    <a class="btn ghost" href="#lessons">Lessons learned</a>
   </div>
 </header>
 
-<figure>
-  <video src="static/videos/hero_city.mp4" autoplay muted loop playsinline></video>
-  <figcaption><b>Idea.</b> Instead of reconstructing terrain and human motion from monocular video, we drive a Unitree G1 character through realistic Unreal Engine scenes and record perfectly aligned (terrain, motion) pairs.</figcaption>
-</figure>
+<figure><video src="static/videos/hero_city.mp4" autoplay muted loop playsinline></video>
+<figcaption><b>Idea.</b> Instead of reconstructing terrain and human motion from monocular video, drive a Unitree G1 character through realistic Unreal Engine scenes and record (terrain, motion) pairs that are aligned by construction.</figcaption></figure>
 
 <section>
-  <div class="tldr">
-    <b>TL;DR</b>
-    <ul>
-      <li>Motion tracking gives humanoids natural, human-like gaits, but almost all motion data is recorded on <b>flat ground</b>. Video-based real-to-sim pipelines (VideoMimic, CRISP) recover stairs and obstacles, but the reconstructed scenes and motions are often misaligned (feet floating, sliding or sinking into the terrain).</li>
-      <li>We built a pipeline that generates <b>aligned terrain + G1 motion pairs inside Unreal Engine</b>: a G1-specific character controller, procedural stairs, and automatic NavMesh navigation. It produces roughly <b>6 hours of motion per hour</b> of wall-clock time.</li>
-      <li>A terrain-aware motion-tracking policy fits the Unreal data well (<b>94%</b> success on 200 stair motions, vs. <b>67.5%</b> on VideoMimic's 123 clips).</li>
-      <li>However, the distilled velocity-command policy <b>did not beat a perceptive AMP baseline</b> in the style of <a href="https://project-instinct.github.io/hiking-in-the-wild/">Hiking in the Wild</a> on stairs. On top of that, the motion diversity from Unreal was limited, and every new terrain type needed a lot of manual work, so we stopped the project. This page documents what we built and what we learned.</li>
-    </ul>
-  </div>
+  <div class="tldr"><b>TL;DR</b>
+  <ul>
+    <li>Motion tracking gives humanoids natural gaits, but motion data is almost all <b>flat ground</b>. Video real-to-sim (VideoMimic, CRISP) gives terrain, but the scenes and motions are often misaligned.</li>
+    <li>We put the <b>Unitree G1 into Unreal Engine</b> (rig, retargeted base motions, custom G1 IK solver), generated stair data procedurally, and trained a terrain-aware tracking teacher and a command-following student.</li>
+    <li>Slopes worked well. Stairs and ledges hit a limit of Unreal's character physics: feet still sank into steps, and fixing it properly means modifying the engine itself.</li>
+    <li>On our stair benchmark, the student <b>lost clearly</b> to a perceptive AMP baseline in the style of Hiking in the Wild, so we stopped. This page documents what we built, what broke, and what we learned.</li>
+  </ul></div>
 </section>
 
 <section>
   <h2>Motivation</h2>
-  <p>Humanoids should be able to move through the environments people live in: stairs, curbs, ramps, hurdles and cluttered floors. Existing approaches each have a clear weakness:</p>
   <table>
     <tr><th style="width:26%">Approach</th><th>Limitation we observed</th></tr>
-    <tr><td><b>Reward-based RL</b> (velocity tracking + height map)</td><td>Rewards have to be redesigned and retuned for each new terrain. Policies traverse terrain robustly but walk unnaturally: a crouched posture with excessive knee flexion, limping, and dragged feet.</td></tr>
-    <tr><td><b>AMP</b> (adversarial motion priors)</td><td>More human-like style, but the style and task rewards often conflict, and the motion prior needs reference clips for each skill.</td></tr>
-    <tr><td><b>Motion tracking</b> (BeyondMimic, SONIC, ...)</td><td>Natural motion and a simple reward, but the data is almost entirely flat-ground MoCap, so there is no terrain to track against.</td></tr>
-    <tr><td><b>Video real-to-sim</b> (VideoMimic, CRISP)</td><td>Terrain and motion come from monocular video, but depth errors and contact mistakes cause misalignment (feet floating, sliding or sinking into the terrain). It also needs full-body footage of every terrain, plus heavy per-video inference and optimization.</td></tr>
+    <tr><td><b>Reward-based RL</b></td><td>Rewards must be redesigned per terrain; gaits are unnatural (crouched posture, bent knees, limping).</td></tr>
+    <tr><td><b>AMP</b></td><td>More human-like style, but style and task rewards can conflict.</td></tr>
+    <tr><td><b>Motion tracking</b> (BeyondMimic, SONIC)</td><td>Natural motion and a simple reward, but the data is flat-ground MoCap with no terrain.</td></tr>
+    <tr><td><b>Video real-to-sim</b> (VideoMimic, CRISP)</td><td>Depth and contact errors misalign scene and motion (floating, sliding, penetration); needs full-body footage per terrain and heavy per-video processing.</td></tr>
   </table>
   <div class="grid2">
-    <figure><video src="static/videos/pure_rl.mp4" autoplay muted loop playsinline></video><figcaption><b>Reward-based RL.</b> Traverses the terrain, but with a low center of mass, heavily bent knees and a limping gait.</figcaption></figure>
-    <figure><video src="static/videos/amp_rough.mp4" autoplay muted loop playsinline></video><figcaption><b>AMP.</b> More human-like style on rough terrain, learned from a handful of reference clips.</figcaption></figure>
+    <figure><video src="static/videos/pure_rl.mp4" autoplay muted loop playsinline></video><figcaption><b>Reward-based RL.</b> Traverses the terrain, but crouched and limping.</figcaption></figure>
+    <figure><video src="static/videos/amp_rough.mp4" autoplay muted loop playsinline></video><figcaption><b>AMP.</b> More human-like style on rough terrain.</figcaption></figure>
   </div>
-  <figure><video src="static/videos/videomimic_fail.mp4" autoplay muted loop playsinline style="max-width:640px;margin:0 auto"></video><figcaption><b>Video real-to-sim data.</b> A failed rollout of a policy trained on VideoMimic real-to-sim clips. Scene and contact errors in the reconstructed data make the references hard to follow.</figcaption></figure>
-  <figure>
-    <img src="static/images/videomimic_ladder.jpg" alt="VideoMimic real-to-sim on a ladder video">
-    <figcaption><b>Why not video?</b> Running the VideoMimic real-to-sim pipeline on a ladder-climbing video: the reconstructed ladder collapses into a staircase-like mesh with spurious walls, and the retargeted G1 motion penetrates the scene. The result cannot be used as training data.</figcaption>
-  </figure>
-  <p>Our bet was that a game engine, which has realistic assets, collision, animation blending and IK, could give us <b>clean and scalable</b> (terrain, motion) pairs.</p>
+  <figure><img src="static/images/videomimic_ladder.jpg" alt="VideoMimic ladder"><figcaption><b>Why not video?</b> VideoMimic real-to-sim on a ladder video: the ladder collapses into a stair-like mesh with spurious walls, and the retargeted G1 penetrates the scene.</figcaption></figure>
 </section>
 
-<section id="method">
-  <h2>Method</h2>
-  <figure class="svg">
-    <img src="static/images/method_pipeline.svg" alt="Data generation pipeline">
-    <figcaption><b>Data generation pipeline.</b> (1) A small library of anchor clips is retargeted to the G1 with a contact-preserving chain. (2) An Unreal character controller blends the clips and places the feet on the terrain. (3) Procedurally generated terrain and NavMesh navigation drive the robot automatically. (4) The output is aligned (terrain, G1 motion) pairs, exported to Isaac Lab.</figcaption>
-  </figure>
+<section id="journey">
+  <h2>Development log</h2>
+  <figure class="svg"><img src="static/images/method_pipeline.svg" alt="Pipeline"><figcaption><b>Final pipeline.</b> Anchor clips are retargeted to the G1, driven by a G1 controller in Unreal (blend space + terrain-aware foot placement), and recorded on procedurally generated terrain to produce aligned (terrain, G1 motion) pairs.</figcaption></figure>
 
-  <h3>1. A G1 character controller inside Unreal Engine</h3>
-  <p>We imported the Unitree G1 into Unreal Engine (skeleton rig and physics asset) and started from the <b>Advanced Locomotion System v4</b> controller. Its humanoid animations were replaced with G1 motions. This required a careful retargeting chain, <i>UE Mannequin &rarr; mannequin-shaped SMPL &rarr; G1-shaped SMPL &rarr; G1</i>, with extra steps for contact-preserving foot height, ankle-tilt correction, bone-length rescaling and low-pass filtering, so that the feet stay flat on the ground. Because the robot itself walks in the engine, the recorded data needs <b>no further retargeting</b>, and the scene and motion are aligned by construction.</p>
-  <figure>
-    <img src="static/images/ue_controller.jpg" alt="Retargeting quality before and after">
-    <figcaption>Retargeting refinement for the controller's source motions (before vs. after): feet no longer tilt forward or hover above the ground.</figcaption>
-  </figure>
+  <h3>Step 1 &middot; Putting the Unitree G1 into Unreal Engine</h3>
+  <p>Importing the mesh is not enough: Unreal animates <i>skeletal</i> meshes, so we built a <b>G1 rig</b> (a skeleton whose bones match the robot's 29 joints) and a physics asset for collision. Moving assets across Isaac &rarr; Blender &rarr; Unreal was the first pain point: every tool uses a different world frame, and bones carry local frames, so rotations came out wrong for days until the axis conventions were matched joint by joint.</p>
   <div class="grid2">
-    <figure><video src="static/videos/als_g1.mp4" autoplay muted loop playsinline></video><figcaption>The G1 driven by the ALS-based controller inside Unreal Engine.</figcaption></figure>
-    <figure><video src="static/videos/motion_blending.mp4" autoplay muted loop playsinline></video><figcaption>Blending a few anchor clips into continuous locomotion.</figcaption></figure>
+    <figure><video src="static/videos/p1_g1_rig.mp4" autoplay muted loop playsinline></video><figcaption>The rigged G1 imported into Unreal Engine.</figcaption></figure>
+    <figure><video src="static/videos/p2_als_walk.mp4" autoplay muted loop playsinline></video><figcaption>Base locomotion from <b>Advanced Locomotion System v4</b> (a free Unreal sample project).</figcaption></figure>
   </div>
 
-  <h3>2. Blend spaces + terrain-aware foot placement</h3>
-  <p>Blend spaces combine a few anchor clips (walk, run, stair ascend/descend, step-over) into a continuous family of motions. For height changes we cast rays ahead of the character, predict the next footholds from the upcoming terrain, and adjust the stride so each foot lands on a step instead of catching the edge. For stairs we recorded dedicated stair motions ourselves, lifted from video with GVHMR / SAM-3D-Body, because walking clips combined with IK looked clearly less natural.</p>
+  <h3>Step 2 &middot; Transplanting the ALS base motions onto the G1</h3>
+  <p>Rather than authoring motions from scratch, we transplanted the ALS base motion set (idle, walk, run, turns) onto the G1 and swapped the character inside the ALS controller. Retargeting was harder than expected: off-the-shelf retargeters (GMR) broke when the source body size differed from the G1 (legs over-stretched or crushed), and physics-based retargeting (PhySINK) filtered out dynamic motions. We ended up with a chain <i>UE Mannequin &rarr; mannequin-shaped SMPL &rarr; G1-shaped SMPL &rarr; G1</i>, plus foot-contact, ankle-tilt and bone-length corrections so the feet land flat.</p>
   <div class="grid2">
-    <figure><video src="static/videos/ik_comparison.mp4" autoplay muted loop playsinline></video><figcaption>Unreal's default two-bone IK vs. our custom foot IK on the G1.</figcaption></figure>
-    <figure><video src="static/videos/foot_target.mp4" autoplay muted loop playsinline></video><figcaption>Predicting the next foothold so each foot lands on a step.</figcaption></figure>
+    <figure><video src="static/videos/p4_smpl_retarget.mp4" autoplay muted loop playsinline></video><figcaption>Fitting an SMPL body to the Unreal mannequin as the bridge for retargeting.</figcaption></figure>
+    <figure><video src="static/videos/p3_g1_walk_run.mp4" autoplay muted loop playsinline></video><figcaption>The G1 walking and running in Unreal with the transplanted motions.</figcaption></figure>
+  </div>
+  <figure><img src="static/images/ue_controller.jpg" alt="Retarget before after"><figcaption>Retargeting refinement (before vs. after): feet no longer tilt forward or hover.</figcaption></figure>
+  <figure><video src="static/videos/als_g1.mp4" autoplay muted loop playsinline></video><figcaption>The G1 running inside the full ALS controller.</figcaption></figure>
+
+  <h3>Step 3 &middot; Problem: feet sink and float on uneven ground</h3>
+  <p>Unreal's character movement keeps the capsule on the surface, but the animated feet do not know about the terrain. On ramps and stairs the G1's feet <b>sank into the ground or floated above it</b>. Unreal's standard fix, the built-in two-bone foot IK in the ALS rig, assumes a human leg; on the G1's joint layout and limits it produced twisted legs and joint-limit violations, so the motions were not transferable to the robot.</p>
+  <div class="grid2">
+    <figure><video src="static/videos/p8_ue_ramp.mp4" autoplay muted loop playsinline></video><figcaption>Before: walking on a ramp, the feet penetrate or float.</figcaption></figure>
+    <figure><video src="static/videos/p5_no_constraint.mp4" autoplay muted loop playsinline></video><figcaption>Kinematic IK without the G1's joint constraints produces poses the robot cannot reach.</figcaption></figure>
   </div>
 
-  <h3>3. Procedural terrain + automatic navigation</h3>
-  <p>Stair scenes with randomized step height and depth are generated procedurally, and the G1 is driven through them automatically with NavMesh navigation. This produces about <b>6 hours of motion data per hour</b>, with no video capture, depth estimation or contact prediction.</p>
-  <figure>
-    <video src="static/videos/stair_generation.mp4" autoplay muted loop playsinline></video>
-    <figcaption>Procedural stair generation with randomized step height, depth and count, and automatic navigation of the G1 across them.</figcaption>
-  </figure>
+  <h3>Step 4 &middot; A custom G1 IK solver inside Unreal</h3>
+  <p>We wrote an IK solver for the G1's own kinematic chain (respecting its joint limits) and embedded it in the Unreal animation graph in place of the two-bone IK. On ramps this fixed the problem: the feet now follow the slope.</p>
+  <div class="grid2">
+    <figure><video src="static/videos/ik_comparison.mp4" autoplay muted loop playsinline></video><figcaption>Unreal's two-bone IK vs. our G1 IK solver.</figcaption></figure>
+    <figure><video src="static/videos/p11_custom_ik.mp4" autoplay muted loop playsinline></video><figcaption>The custom G1 IK running inside Unreal.</figcaption></figure>
+  </div>
+  <div class="grid2">
+    <figure><video src="static/videos/p7_ramp_before.mp4" autoplay muted loop playsinline></video><figcaption><span class='tag bad'>before</span> Ramp walking without the G1 IK.</figcaption></figure>
+    <figure><video src="static/videos/p9_ramp_fixed.mp4" autoplay muted loop playsinline></video><figcaption><span class='tag ok'>after</span> Ramp walking with the G1 IK and height correction: feet stay on the surface.</figcaption></figure>
+  </div>
 
-  <h3>4. Terrain-aware motion tracking &rarr; command-conditioned student</h3>
-  <figure class="svg">
-    <img src="static/images/method_policy.svg" alt="Teacher-student policy training">
-    <figcaption><b>Policy training.</b> A teacher tracks the Unreal reference motion given proprioception and a local height map. A student is then distilled (DAgger followed by PPO fine-tuning) to follow velocity commands without the reference motion.</figcaption>
-  </figure>
-  <p>The teacher is a multi-motion tracking policy in Isaac Lab (BeyondMimic-style rewards) that also receives a local height map around the robot. We first checked that motions exported from Unreal can be tracked in simulation: walking and running, 10&deg; to 30&deg; ramps, climbing onto a ledge, and stairs.</p>
+  <h3>Step 5 &middot; Stairs and ledges: a wall we could not get past</h3>
+  <p>Linear height changes (ramps) were fine. <b>Abrupt</b> height changes (stairs, ledges) were not: feet still caught step edges and sank into treads. We tried a series of heuristics:</p>
+  <ul>
+    <li>ray casts from the toe and heel so the foot never penetrates a surface;</li>
+    <li>looking ahead in the height map to plan the next foothold and adapt stride length to the step depth;</li>
+    <li>lifting the foot higher when the terrain height changes, and adding new foot-lifting and stair-specific motions (captured with GVHMR / SAM-3D-Body);</li>
+    <li>blend spaces without root motion and a custom character-movement component for stairs.</li>
+  </ul>
   <div class="grid3">
-    <figure><video src="static/videos/ue_ramp_ref.mp4" autoplay muted loop playsinline></video><figcaption>Unreal reference: walking up a 20&deg; ramp.</figcaption></figure>
-    <figure><video src="static/videos/isaac_ramp_track.mp4" autoplay muted loop playsinline></video><figcaption>The same motion tracked in Isaac Lab.</figcaption></figure>
-    <figure><video src="static/videos/isaac_climb.mp4" autoplay muted loop playsinline></video><figcaption>Tracking a climb-up motion onto an 80 cm ledge.</figcaption></figure>
+    <figure><video src="static/videos/p12_stair_sink.mp4" autoplay muted loop playsinline></video><figcaption>Feet sinking into stair treads.</figcaption></figure>
+    <figure><video src="static/videos/p13_toe_heel.mp4" autoplay muted loop playsinline></video><figcaption>Toe / heel ray casts.</figcaption></figure>
+    <figure><video src="static/videos/foot_target.mp4" autoplay muted loop playsinline></video><figcaption>Planning the next foothold.</figcaption></figure>
   </div>
-  <figure><img src="static/images/tracking_stairs.jpg" alt="Tracking stair motions"><figcaption>Walk motion + IK (left) vs. dedicated stair motions (right). The dedicated stair clips look much more natural.</figcaption></figure>
+  <div class="grid3">
+    <figure><video src="static/videos/p14_step_height.mp4" autoplay muted loop playsinline></video><figcaption>Adjusting step height for the terrain.</figcaption></figure>
+    <figure><video src="static/videos/p15_no_rootmotion.mp4" autoplay muted loop playsinline></video><figcaption>Stair motion in a blend space without root motion.</figcaption></figure>
+    <figure><video src="static/videos/p16_custom_cmc.mp4" autoplay muted loop playsinline></video><figcaption>Custom character-movement component for stairs.</figcaption></figure>
+  </div>
+  <p>Each helped partially, but the root cause is how Unreal's physics and character movement move the body relative to the animation (root motion from blend spaces could not be extracted and timed correctly, a long-standing engine issue). Solving it properly means <b>modifying Unreal's physics / movement code in C++</b>, which was far beyond the scope of the project. We decided to continue with the data we could produce.</p>
+
+  <h3>Step 6 &middot; Sanity check: can a policy track one motion?</h3>
+  <p>Before scaling up, we checked that a single Unreal motion can be tracked in Isaac Lab on its terrain: ramps, stairs and climbing a ledge. All worked.</p>
+  <div class="grid3">
+    <figure><video src="static/videos/ue_ramp_ref.mp4" autoplay muted loop playsinline></video><figcaption>Unreal reference, 20&deg; ramp.</figcaption></figure>
+    <figure><video src="static/videos/isaac_ramp_track.mp4" autoplay muted loop playsinline></video><figcaption>Tracked in Isaac Lab.</figcaption></figure>
+    <figure><video src="static/videos/p18_stair_track.mp4" autoplay muted loop playsinline></video><figcaption>Tracking a single stair motion.</figcaption></figure>
+  </div>
+  <div class="grid2">
+    <figure><video src="static/videos/isaac_climb.mp4" autoplay muted loop playsinline></video><figcaption>Tracking a climb-up onto an 80 cm ledge.</figcaption></figure>
+    <figure><img src="static/images/tracking_stairs.jpg" alt="stair motions"><figcaption>Walk motion + IK (left) vs. dedicated stair motions (right): the stair clips look much more natural.</figcaption></figure>
+  </div>
+
+  <h3>Step 7 &middot; Scaling up stair data and training teacher &rarr; student</h3>
+  <p>Using stairs as the target terrain, we generated many staircases procedurally (linear and spiral layouts, randomized step height, depth and count) and let the G1 walk them automatically, at about <b>6 hours of motion per hour</b>. We trained a terrain-aware multi-motion tracking teacher on this data, distilled it into a student that follows velocity commands (DAgger), and fine-tuned the student with PPO.</p>
+  <figure><video src="static/videos/stair_generation.mp4" autoplay muted loop playsinline></video><figcaption>Procedural stair generation and automatic navigation.</figcaption></figure>
+  <figure class="svg"><img src="static/images/method_policy.svg" alt="policy"><figcaption><b>Policy training.</b> The teacher tracks the Unreal reference given proprioception and a local height map; the student drops the reference motion and follows velocity commands.</figcaption></figure>
 </section>
 
 <section id="results">
   <h2>Results</h2>
-
   <div class="stats">
-    <div class="stat"><b>~6 h / h</b><span>motion data generated per hour of wall-clock time</span></div>
-    <div class="stat"><b>94%</b><span>tracking success on 200 Unreal stair motions (12 failures)</span></div>
-    <div class="stat"><b>67.5%</b><span>tracking success on VideoMimic's 123 real-to-sim clips</span></div>
+    <div class="stat"><b>~6 h / h</b><span>motion data generated per wall-clock hour</span></div>
+    <div class="stat"><b>94%</b><span>teacher tracking success on 200 Unreal stair motions (12 failures)</span></div>
+    <div class="stat"><b>67.5%</b><span>same setup on VideoMimic's 123 real-to-sim clips</span></div>
   </div>
-
-  <h3>Unreal data is much easier to track than video real-to-sim data</h3>
-  <p>With the same terrain-aware tracking setup, a multi-motion policy trained on 200 Unreal stair motions converged quickly and succeeded on 94% of its training motions, while the policy trained on VideoMimic's released real-to-sim clips reached 67.5%. Most of the 12 Unreal failures were ascending motions that came from outside the anchor clips of the blend space, or cases where the reference itself was poor. Note that these numbers are measured on each policy's own training motions, not on a shared benchmark.</p>
-  <figure><img src="static/images/episode_length.png" alt="Training curves" style="max-width:560px"><figcaption>Multi-motion tracking training curves on VideoMimic data vs. Unreal data (200 motions).</figcaption></figure>
+  <p>The teacher fits Unreal data far more easily than video-reconstructed data (both numbers are on each policy's own training motions). Most teacher failures were ascending motions outside the blend space's anchor clips.</p>
   <div class="grid3">
-    <figure><span class="tag ok">success</span><video src="static/videos/track_stair_up.mp4" autoplay muted loop playsinline></video><figcaption>Ascending, 28 cm steps.</figcaption></figure>
-    <figure><span class="tag ok">success</span><video src="static/videos/track_stair_down.mp4" autoplay muted loop playsinline></video><figcaption>Descending, 22 cm steps.</figcaption></figure>
-    <figure><span class="tag bad">failure</span><video src="static/videos/track_stair_fail.mp4" autoplay muted loop playsinline></video><figcaption>Ascending, 30 cm steps: drifts too far from the reference.</figcaption></figure>
+    <figure><span class="tag ok">success</span><video src="static/videos/track_stair_up.mp4" autoplay muted loop playsinline></video><figcaption>Teacher, ascending 28 cm.</figcaption></figure>
+    <figure><span class="tag ok">success</span><video src="static/videos/track_stair_down.mp4" autoplay muted loop playsinline></video><figcaption>Teacher, descending 22 cm.</figcaption></figure>
+    <figure><span class="tag bad">failure</span><video src="static/videos/track_stair_fail.mp4" autoplay muted loop playsinline></video><figcaption>Teacher, ascending 30 cm.</figcaption></figure>
   </div>
-  <p style="text-align:center;color:var(--muted);font-size:.9rem">Teacher tracking rollouts on Unreal-generated staircases (the translucent ghost is the reference motion).</p>
-  <p class="note"><b>Other findings from the tracking ablations.</b> (1) Giving the policy a height map helps it match the reference; full <i>xyz</i> samples work better than heights alone, and a longer look-ahead window (17&times;11) beats 11&times;11. (2) For noisy video data, pretraining on flat-ground motions matters a lot: in one VideoMimic stair clip, success went from 0% to 90% with pretraining. (3) Fine-tuning a policy pretrained on PHUMA did not help.</p>
 
-  <h3>The student policy did not beat a perceptive AMP baseline</h3>
-  <p>We distilled the teacher into a student that follows velocity commands and evaluated both it and a perceptive AMP baseline in the style of Hiking in the Wild on unseen staircases (step heights 15 to 35 cm, step depths from height + 5 cm to 70 cm, 6 steps).</p>
-  <figure><img src="static/images/student_stairs.png" alt="Student success vs stair height" style="width:100%;max-width:820px"><figcaption><b>Ours (Unreal-data student).</b> Success rate on unseen stairs of increasing step height. Performance degrades as the steps get taller.</figcaption></figure>
-  <figure><img src="static/images/amp_stairs.png" alt="Perceptive AMP success" style="width:100%;max-width:820px"><figcaption><b>Perceptive AMP baseline.</b> The same evaluation. Success stays high across step heights.</figcaption></figure>
+  <h3>Benchmark: unseen staircases vs. perceptive AMP</h3>
+  <p>We built an evaluation benchmark of <b>unseen staircases</b> (ascending and descending, randomized step height and depth, several steps per flight) and compared our student against a perceptive AMP policy in the style of Hiking in the Wild. A trial succeeds if the robot reaches at least 90% of the distance to the goal.</p>
+  <figure class="svg"><img src="static/images/results_stairs.svg" alt="Stair success rates"><figcaption><b>Success rate vs. step height.</b> Our student degrades quickly as steps get taller (73% &rarr; 14% ascending, 80% &rarr; 0% descending), while the AMP baseline stays at 88&ndash;100%. Note: the two were evaluated on slightly different height grids (ours 15&ndash;35 cm, AMP 10&ndash;30 cm), and our per-height sample counts are small (n = 2 to 11 episodes per point vs. 40 to 60 for AMP).</figcaption></figure>
+  <div class="grid3">
+    <figure><span class="tag ok">success</span><video src="static/videos/student_up.mp4" autoplay muted loop playsinline></video><figcaption>Ours, ascending 23 cm.</figcaption></figure>
+    <figure><span class="tag ok">success</span><video src="static/videos/student_down.mp4" autoplay muted loop playsinline></video><figcaption>Ours, descending 19 cm.</figcaption></figure>
+    <figure><span class="tag bad">failure</span><video src="static/videos/student_fail.mp4" autoplay muted loop playsinline></video><figcaption>Ours, ascending 30 cm.</figcaption></figure>
+  </div>
   <div class="grid2">
-    <figure><img src="static/images/train_table.png" alt="Student policy performance"><figcaption>Student-policy success by step height (success = the root never drifts more than 0.5 m from the reference root).</figcaption></figure>
+    <figure><video src="static/videos/amp_stairs.mp4" autoplay muted loop playsinline></video><figcaption><b>Perceptive AMP</b>, 30 cm steps.</figcaption></figure>
+    <figure><video src="static/videos/p19_perceptive_rl.mp4" autoplay muted loop playsinline></video><figcaption><b>Perceptive RL</b> (reward only), 30 cm steps.</figcaption></figure>
   </div>
-  <div class="grid3">
-    <figure><span class="tag ok">success</span><video src="static/videos/student_up.mp4" autoplay muted loop playsinline></video><figcaption>Student, ascending 23 cm steps.</figcaption></figure>
-    <figure><span class="tag ok">success</span><video src="static/videos/student_down.mp4" autoplay muted loop playsinline></video><figcaption>Student, descending 19 cm steps.</figcaption></figure>
-    <figure><span class="tag bad">failure</span><video src="static/videos/student_fail.mp4" autoplay muted loop playsinline></video><figcaption>Student, ascending 30 cm steps.</figcaption></figure>
-  </div>
-  <figure><video src="static/videos/amp_stairs.mp4" autoplay muted loop playsinline style="max-width:640px;margin:0 auto"></video><figcaption style="text-align:center"><b>Perceptive AMP baseline</b> on 30 cm / 40 cm stairs.</figcaption></figure>
 </section>
 
 <section id="why-stopped">
   <h2>Why we stopped</h2>
   <ol>
-    <li><b>The baseline was already strong.</b> For lower-body locomotion on stairs, a perceptive AMP policy reaches success rates close to 100% and walks reasonably naturally. Motion tracking on our data did not show a clear advantage, so the core claim (that terrain-aware motion data beats reward/AMP-based training) did not hold for this task.</li>
-    <li><b>Limited motion diversity.</b> The Unreal controller mostly produces walking and stair gaits, which are not very different from what an AMP prior already covers. The real benefit of motion tracking would show up in whole-body skills such as vaulting, climbing and ladders, and those are exactly the motions that are hardest to author in the engine.</li>
-    <li><b>Adding terrains does not scale.</b> Each new terrain type needed new anchor motions, blend-space tuning, root-motion fixes and IK heuristics, much of it in Unreal's C++ animation stack. The pipeline scales in <i>quantity</i> (hours of data) but not in <i>variety</i>.</li>
+    <li><b>We lost clearly to the baseline.</b> On stairs, a perceptive AMP policy already succeeds 88&ndash;100% of the time with reasonably natural gaits; our student did not come close.</li>
+    <li><b>The bottleneck is inside Unreal.</b> Physically plausible data for stairs and ledges needs changes to Unreal's physics and character movement at the C++ level, which is hard to debug and very costly in time for someone who is not an Unreal engineer. If coding agents become fluent enough in Unreal internals, this becomes much more feasible; today it is not.</li>
+    <li><b>Simple uneven terrain is already solved by RL.</b> For stairs, slopes and rough ground, existing reward designs are enough. Motion data is not the missing piece there.</li>
   </ol>
 </section>
 
 <section id="lessons">
-  <h2>Lessons learned</h2>
+  <h2>Outlook &amp; lessons</h2>
   <ul>
-    <li><b>Data quality matters more than training tricks.</b> With clean, aligned data (Unreal, or MeshMimic-style simplified scenes), terrain-aware tracking needs little reward engineering. With misaligned video data, it depends heavily on pretraining.</li>
-    <li><b>Real-to-sim from monocular video is still fragile</b> in the wild. Contact estimation, scene recovery, scene-motion alignment and retargeting each fail in their own ways. Better depth models (MoGe, MegaSAM) help, but they are not enough on their own.</li>
-    <li><b>Game engines are good at geometry, not at motion.</b> Terrain and alignment come almost for free. Producing physically plausible motions for new skills does not: engine features like root motion, blending and two-bone IK do not guarantee physical plausibility.</li>
-    <li><b>Pick the task where motion data is truly needed.</b> Motion data is worth the effort for whole-body, contact-rich skills (climbing, vaulting, ladders), where reward design and AMP struggle. It is much less worth it for stairs, which RL and AMP already largely solve.</li>
+    <li><b>Where this idea could still pay off:</b> tasks where the <i>realistic scene</i> matters, or terrain that needs skills reward design struggles with, such as narrow passages, crawling or climbing. If basic motions for such terrain can be authored in a game engine and transplanted to the robot, those tasks may become learnable.</li>
+    <li><b>Game engines are good at geometry, not motion.</b> Terrain and alignment come almost for free; physically plausible motion on abrupt height changes does not.</li>
+    <li><b>Data quality beats training tricks.</b> Clean, aligned data needed little reward engineering; noisy video data depended heavily on pretraining.</li>
+    <li><b>Validate against the strongest simple baseline early.</b> Comparing against Hiking in the Wild-style AMP sooner would have redirected the project earlier.</li>
   </ul>
 </section>
 
@@ -222,7 +234,6 @@
   This page summarizes an unpublished, discontinued project. Figures and videos are from internal progress reports.<br>
   Contact: <a href="mailto:kmlee@kaist.ac.kr">kmlee@kaist.ac.kr</a> &middot; <a href="https://kyungminn.github.io/">kyungminn.github.io</a>
 </footer>
-
 </div>
 </body>
 </html>
